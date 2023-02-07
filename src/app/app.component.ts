@@ -12,15 +12,15 @@
 import {Component, OnInit} from '@angular/core';
 import { MovieTestService } from './movie-test.service';
 import { Movie } from './movie';
-import { Observable } from 'rxjs';
+// import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  public moviesList: Movie[];
+  public moviesList: Movie[] = []
 
   constructor(private movieService: MovieTestService) {}
 

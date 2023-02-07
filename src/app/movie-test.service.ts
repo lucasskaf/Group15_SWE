@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import { Movie } from './movie';
-import {environment} from '../environments/environments';
+// import {environment} from '../environments/environments';
 
 import { Observable, throwError } from 'rxjs';
-import { catchError, retry } from 'rxjs/operators';
-import { map } from 'rxjs/operators';
+// import { catchError, retry } from 'rxjs/operators';
+// import { map } from 'rxjs/operators';
 // import 'rxjs/add/operator/map';
 
 @Injectable()
