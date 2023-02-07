@@ -29,5 +29,4 @@ type user struct {
 
 func main() {
 	fmt.Println("test")
-
 }
