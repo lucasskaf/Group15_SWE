@@ -19,13 +19,16 @@ import { Movie } from './movie';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent implements OnInit {
-  public moviesList: Movie[] = []
+// export class AppComponent implements OnInit {
+//   public moviesList: Movie[] = []
 
-  constructor(private movieService: MovieTestService) {}
+//   constructor(private movieService: MovieTestService) {}
 
-  ngOnInit() {
-   this.movieService.getTitle().subscribe(data => this.moviesList = data);
-  }
+//   ngOnInit() {
+//    this.movieService.getTitle().subscribe(data => this.moviesList = data);
+//   }
 
+// }
+export class AppComponent {
+  title = 'BingeBuddy';
 }
