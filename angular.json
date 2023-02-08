@@ -27,7 +27,7 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": ["src/app/login-register/login-register.js"]
+            "scripts": ["src/app/user-auth/login-register/login-register.js"]
           },
           "configurations": {
             "production": {
