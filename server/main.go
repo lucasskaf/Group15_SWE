@@ -33,10 +33,26 @@ type movie struct {
 type User struct {
 	Username  string   `json:"username"`
 	Password  string   `json:"password"`
+	Email     string   `json:"email"`
 	Watchlist []movie  `json:"watchlist"`
 	Genres    []string `json:"genres"`
 	Rating    float32  `json:"rating"`
 	Providers []string `json:"providers"`
+}
+
+func connectToDB() (client *mongo.Client) {
+	if err := godotenv.Load("go.env"); err != nil {
+		log.Println("No .env file found")
+	}
+	uri := os.Getenv("MONGODB_URI")
+	if uri == "" {
+		log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
+	}
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	if err != nil {
+		panic(err)
+	}
+	return client
 }
 
 func login(context *gin.Context) {
@@ -53,8 +69,10 @@ func login(context *gin.Context) {
 	//database.Find(context, filter)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			// This error means your query did not match any documents.
+			// prints debug message and sends back empty JSON struct if password is wrong
 			fmt.Printf("username or password is incorrect")
+			var emptyStruct User
+			context.IndentedJSON(http.StatusOK, emptyStruct)
 			return
 		}
 		panic(err)
@@ -64,19 +82,16 @@ func login(context *gin.Context) {
 	client.Disconnect(context)
 }
 
-func connectToDB() (client *mongo.Client) {
-	if err := godotenv.Load("go.env"); err != nil {
-		log.Println("No .env file found")
+func createUser(context *gin.Context) {
+	client := connectToDB()
+	database := client.Database("UserInfo").Collection("UserInfo")
+	var newUser User
+	if err := context.BindJSON(&newUser); err != nil {
+		fmt.Printf("JSON bind failed!")
+		return //catches null requests and throws error.
 	}
-	uri := os.Getenv("MONGODB_URI")
-	if uri == "" {
-		log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
-	}
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
-	if err != nil {
-		panic(err)
-	}
-	return client
+	database.InsertOne(context, newUser)
+	client.Disconnect(context)
 }
 
 func main() {
@@ -115,5 +130,7 @@ func main() {
 	//Sets up routing
 	router := gin.Default()
 	router.GET("/login", login)
+	router.POST("/signup", createUser)
+	router.GET("/watchlist")
 	router.Run("localhost:8080")
 }
