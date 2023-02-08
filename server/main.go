@@ -19,7 +19,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	//"net/http"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -46,7 +47,7 @@ func login(context *gin.Context) {
 		fmt.Printf("Json binding failed")
 	}
 
-	filter := bson.D{{"password", credentials.Password}}
+	filter := bson.D{{"username", credentials.Username}, {"password", credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
 	//database.Find(context, filter)
@@ -58,7 +59,9 @@ func login(context *gin.Context) {
 		}
 		panic(err)
 	}
-	fmt.Printf(retrieved.Username)
+	context.IndentedJSON(http.StatusOK, retrieved)
+	fmt.Printf("login successful!")
+	client.Disconnect(context)
 }
 
 func connectToDB() (client *mongo.Client) {
@@ -73,32 +76,28 @@ func connectToDB() (client *mongo.Client) {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		if err := client.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
-	}()
 	return client
 }
 
 func main() {
 	//database connection boilerplate
-	if err := godotenv.Load("go.env"); err != nil {
-		log.Println("No .env file found")
-	}
-	uri := os.Getenv("MONGODB_URI")
-	if uri == "" {
-		log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
-	}
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		if err := client.Disconnect(context.TODO()); err != nil {
+	/*
+		if err := godotenv.Load("go.env"); err != nil {
+			log.Println("No .env file found")
+		}
+		uri := os.Getenv("MONGODB_URI")
+		if uri == "" {
+			log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
+		}
+		client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+		if err != nil {
 			panic(err)
 		}
-	}()
+		defer func() {
+			if err := client.Disconnect(context.TODO()); err != nil {
+				panic(err)
+			}
+		}()*/
 
 	//alias to easily access database
 	//database := client.Database("UserInfo").Collection("UserInfo")
@@ -116,5 +115,5 @@ func main() {
 	//Sets up routing
 	router := gin.Default()
 	router.GET("/login", login)
-
+	router.Run("localhost:8080")
 }
