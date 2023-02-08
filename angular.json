@@ -27,7 +27,7 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": ["src/app/loginModal.js"]
           },
           "configurations": {
             "production": {

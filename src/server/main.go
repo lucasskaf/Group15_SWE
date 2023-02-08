@@ -16,7 +16,7 @@ func main() {
 	router.HandleFunc("/update", updateHandler).Methods("PUT")
 	router.HandleFunc("/delete", deleteHandler).Methods("POST")
 
-	err := http.ListenAndServe(":8080", router)
+	err := http.ListenAndServe(":4200", router)
 
 	if err != nil {
 		log.Fatalln("Error: Problem with the server", err)
