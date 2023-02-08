@@ -25,19 +25,23 @@ import (
 )
 
 type movie struct {
-	Title   string
-	Runtime float32
+	Title     string   `json:"title"`
+	Director  string   `json:"director"`
+	Imglink   string   `json:"imglink"`
+	Runtime   float32  `json:"runtime"`
+	Avgrating float32  `json:"avgrating"`
+	Providers []string `json:"providers"`
 }
 
 // the names of fields MUST be uppercase or else MongoDB will NOT store them
 type User struct {
-	Username  string   `json:"username"`
-	Password  string   `json:"password"`
-	Email     string   `json:"email"`
-	Watchlist []movie  `json:"watchlist"`
-	Genres    []string `json:"genres"`
-	Rating    float32  `json:"rating"`
-	Providers []string `json:"providers"`
+	Username      string   `json:"username"`
+	Password      string   `json:"password"`
+	Email         string   `json:"email"`
+	Watchlist     []movie  `json:"watchlist"`
+	Genres        []string `json:"genres"`
+	Rating        float32  `json:"rating"`
+	Subscriptions []string `json:"subscriptions"`
 }
 
 func connectToDB() (client *mongo.Client) {
