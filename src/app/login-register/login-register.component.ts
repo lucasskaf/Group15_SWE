@@ -15,4 +15,5 @@ export class LoginRegisterComponent {
   toggleSignUp () {
     this.container?.classList.add("right-panel-active");
   }
+
 }
