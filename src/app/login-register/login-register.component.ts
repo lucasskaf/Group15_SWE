@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { loginInteraction } from './login-register.js'
 
 @Component({
   selector: 'app-login-register',
@@ -6,14 +7,9 @@ import { Component } from '@angular/core';
   styleUrls: ['./login-register.component.css']
 })
 export class LoginRegisterComponent {
-  container = document.getElementById('container');
-
-  toggleLogIn () {
-    this.container?.classList.remove("right-panel-active");
-  }
   
-  toggleSignUp () {
-    this.container?.classList.add("right-panel-active");
+  ngOnInit(): void {
+    const functionality = loginInteraction()
   }
 
 }
