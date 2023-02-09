@@ -7,7 +7,7 @@ import { UserAuthModule } from './user-auth/user-auth.module';
 
 @NgModule({
   declarations: [
-    AppComponent,
+    AppComponent
   ],
   imports: [
     BrowserModule,
