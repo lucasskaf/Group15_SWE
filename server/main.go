@@ -52,7 +52,7 @@ func connectToDB() (client *mongo.Client) {
 	if uri == "" {
 		log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
 	}
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://test:1234@cluster0.aruhgq1.mongodb.net/?retryWrites=true&w=majority"))
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +70,6 @@ func login(context *gin.Context) {
 	filter := bson.D{{"username", credentials.Username}, {"password", credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
-	//database.Find(context, filter)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			// prints debug message and sends back empty JSON struct if password is wrong
