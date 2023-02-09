@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LoginRegisterComponent } from './login-register/login-register.component';
-
+import { MatIconModule } from '@angular/material/icon'
 
 
 @NgModule({
@@ -9,8 +9,8 @@ import { LoginRegisterComponent } from './login-register/login-register.componen
     LoginRegisterComponent
   ],
   imports: [
-    CommonModule
-
+    CommonModule,
+    MatIconModule
   ],
   exports: [
     LoginRegisterComponent
