@@ -24,7 +24,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type movie struct {
+type Movie struct {
 	Title     string   `json:"title"`
 	Director  string   `json:"director"`
 	Imglink   string   `json:"imglink"`
@@ -38,7 +38,7 @@ type User struct {
 	Username      string   `json:"username"`
 	Password      string   `json:"password"`
 	Email         string   `json:"email"`
-	Watchlist     []movie  `json:"watchlist"`
+	Watchlist     []Movie  `json:"watchlist"`
 	Genres        []string `json:"genres"`
 	Rating        float32  `json:"rating"`
 	Subscriptions []string `json:"subscriptions"`
@@ -75,7 +75,7 @@ func login(context *gin.Context) {
 			// prints debug message and sends back empty JSON struct if password is wrong
 			fmt.Printf("username or password is incorrect")
 			var emptyStruct User
-			context.IndentedJSON(http.StatusOK, emptyStruct)
+			context.IndentedJSON(http.StatusBadRequest, emptyStruct)
 			return
 		}
 		panic(err)
@@ -93,7 +93,36 @@ func createUser(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
 	}
+	//throws error if username or password are blank
+	if newUser.Username == "" || newUser.Password == "" {
+		var emptyStruct User
+		context.IndentedJSON(http.StatusBadRequest, emptyStruct)
+		client.Disconnect(context)
+	}
 	database.InsertOne(context, newUser)
+	client.Disconnect(context)
+}
+
+func addToWatchlist(context *gin.Context) {
+	username := context.Param("username")
+	client := connectToDB()
+	database := client.Database("UserInfo").Collection("UserInfo")
+	var movie Movie
+	if err := context.BindJSON(&movie); err != nil {
+		fmt.Printf("JSON bind failed!")
+		return //catches null requests and throws error.
+	}
+	filter := bson.D{{"username", username}}
+	var updatedUser User
+	database.FindOne(context, filter).Decode(&updatedUser)
+	updatedUser.Watchlist = append(updatedUser.Watchlist, movie)
+	oldDoc := database.FindOneAndUpdate(context, filter, updatedUser)
+	//panics if document cannot be updated
+	if oldDoc == nil {
+		context.IndentedJSON(http.StatusBadGateway, oldDoc)
+		return
+	}
+	context.IndentedJSON(http.StatusOK, updatedUser)
 	client.Disconnect(context)
 }
 
@@ -134,6 +163,7 @@ func main() {
 	router := gin.Default()
 	router.GET("/login", login)
 	router.POST("/signup", createUser)
+	router.POST("/:username/add", addToWatchlist)
 	router.GET("/watchlist")
 	router.Run("localhost:8080")
 }
