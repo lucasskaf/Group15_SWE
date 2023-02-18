@@ -98,6 +98,18 @@ func createUser(context *gin.Context) {
 		var emptyStruct User
 		context.IndentedJSON(http.StatusBadRequest, emptyStruct)
 		client.Disconnect(context)
+		return
+	}
+
+	//checks for duplicate username
+	var duplicate User
+	filter := bson.D{{"username", newUser.Username}}
+	err := database.FindOne(context, filter).Decode(&duplicate)
+	if err != mongo.ErrNoDocuments {
+		fmt.Printf("username is taken")
+		var emptyStruct User
+		context.IndentedJSON(http.StatusBadRequest, emptyStruct)
+		return
 	}
 	database.InsertOne(context, newUser)
 	client.Disconnect(context)
@@ -116,14 +128,87 @@ func addToWatchlist(context *gin.Context) {
 	var updatedUser User
 	database.FindOne(context, filter).Decode(&updatedUser)
 	updatedUser.Watchlist = append(updatedUser.Watchlist, movie)
-	oldDoc := database.FindOneAndUpdate(context, filter, updatedUser)
+	//FindOneAndUpdate doesn't work
+	oldDoc := database.FindOneAndReplace(context, filter, updatedUser)
 	//panics if document cannot be updated
 	if oldDoc == nil {
-		context.IndentedJSON(http.StatusBadGateway, oldDoc)
+		context.IndentedJSON(http.StatusBadRequest, oldDoc)
+		fmt.Printf("Dcoument can't be updated")
 		return
 	}
 	context.IndentedJSON(http.StatusOK, updatedUser)
 	client.Disconnect(context)
+}
+
+func removeFromWatchlist(context *gin.Context) {
+	//should take in movie object
+	username := context.Param("username")
+	client := connectToDB()
+	database := client.Database("UserInfo").Collection("UserInfo")
+	var movie Movie
+	if err := context.BindJSON(&movie); err != nil {
+		fmt.Printf("JSON bind failed!")
+		return //catches null requests and throws error.
+	}
+	//filter := bson.D{{"username.watchlist", movie.Title}}
+	filter := bson.D{{"username", username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
+	result := database.FindOneAndDelete(context, filter)
+	//returns error if deletion fails
+	if result == nil {
+		context.IndentedJSON(http.StatusBadRequest, result)
+		client.Disconnect(context)
+	}
+	context.IndentedJSON(http.StatusOK, result)
+	client.Disconnect(context)
+}
+
+func removeUser(context *gin.Context) {
+	username := context.Param("username")
+	client := connectToDB()
+	database := client.Database("UserInfo").Collection("UserInfo")
+	filter := bson.D{{"username", username}}
+	result := database.FindOneAndDelete(context, filter)
+	//returns error if user doesn't exist
+	if result == nil {
+		context.IndentedJSON(http.StatusBadRequest, result)
+	}
+	context.IndentedJSON(http.StatusOK, result)
+	client.Disconnect(context)
+}
+
+// generic function that replaces one user profile in database with an updated one
+func updateUserInfo(context *gin.Context) {
+	username := context.Param("username")
+	client := connectToDB()
+	database := client.Database("UserInfo").Collection("UserInfo")
+	var updatedUser User
+	var currProfile User
+
+	if err := context.BindJSON(&updatedUser); err != nil {
+		fmt.Printf("JSON bind failed!")
+		return //catches null requests and throws error.
+	}
+	//checks for blank username and password
+	if updatedUser.Username == "" || updatedUser.Password == "" {
+		context.IndentedJSON(http.StatusBadRequest, updatedUser)
+		client.Disconnect(context)
+		return
+	}
+
+	duplicateFilter := bson.D{{"username", updatedUser.Username}}
+	updateFilter := bson.D{{"username", username}}
+
+	//checks whether desired username already exists
+	err := database.FindOne(context, duplicateFilter).Decode(&currProfile)
+	if err == mongo.ErrNoDocuments {
+		database.FindOneAndReplace(context, updateFilter, updatedUser)
+		context.IndentedJSON(http.StatusOK, updatedUser)
+		client.Disconnect(context)
+	} else {
+		//throws error if username is duplicate
+		context.IndentedJSON(http.StatusBadRequest, username)
+		client.Disconnect(context)
+	}
 }
 
 func main() {
@@ -164,6 +249,8 @@ func main() {
 	router.GET("/login", login)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
-	router.GET("/watchlist")
+	router.PUT("/:username/update", updateUserInfo)
+	router.DELETE("/:username/delete", removeUser)
+	router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
 	router.Run("localhost:8080")
 }
