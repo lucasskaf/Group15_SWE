@@ -4,7 +4,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
+	"time"
 
 	//"gorm.io/driver/sqlite"
 	//"gorm.io/gorm"
@@ -17,21 +19,33 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	//"go.mongodb.org/mongo-driver/bson/primitive"
+	"bufio"
+	"math/rand"
+	"net/http"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Movie struct {
-	Title     string   `json:"title"`
-	Director  string   `json:"director"`
-	Imglink   string   `json:"imglink"`
-	Runtime   float32  `json:"runtime"`
-	Avgrating float32  `json:"avgrating"`
-	Providers []string `json:"providers"`
+	Title      string   `json:"title"`
+	Director   string   `json:"director"`
+	Imglink    string   `json:"imglink"`
+	Runtime    float32  `json:"runtime"`
+	Avgrating  float32  `json:"avgrating"`
+	Providers  []string `json:"providers"`
+	DatabaseID int      `json:"databaseid"`
+}
+
+// struct for getting IDs from movie databse
+type parseStruct struct {
+	//Adult          bool    `json:"adult"`
+	Id int `json:"id"`
+	//Original_Title string  `json:"original_title"`
+	//Popularity     float32 `json:"popularity"`
+	//Video          bool    `json:"video"`
 }
 
 // the names of fields MUST be uppercase or else MongoDB will NOT store them
@@ -184,7 +198,6 @@ func updateUserInfo(context *gin.Context) {
 	database := client.Database("UserInfo").Collection("UserInfo")
 	var updatedUser User
 	var currProfile User
-
 	if err := context.BindJSON(&updatedUser); err != nil {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
@@ -212,15 +225,43 @@ func updateUserInfo(context *gin.Context) {
 	}
 }
 
-// credit for movie API goes to The Movie DB (TMDB)
-// "This product uses the TMDB API but is not endorsed or certified by TMDB." - Put this in the frontend
-// our API key: 010c2ddcdf323db029b6dca4cbfa49de
+/*
+	Credit for movie API goes to The Movie DB (TMDB)
+
+"This product uses the TMDB API but is not endorsed or certified by TMDB." - Put this in the frontend
+our API key: 010c2ddcdf323db029b6dca4cbfa49de
+As of 2/18/2022, the largest possible movie ID is 1088411, while the smallest possible movie ID is 2
+*/
 func generateMovie(context *gin.Context) {
-	resp, err := http.Get("https://api.themoviedb.org/3/movie/550?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US")
+	//rng uses current time as a seed
+	rng := rand.New(rand.NewSource(time.Now().Unix()))
+	frontHalf := "https://api.themoviedb.org/3/movie/"
+	backHalf := "?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US"
+	var resp *http.Response
+	var err error
+	executions := 0
+	//resp is nil by default!
+
+	id := int((rng.Float64() * 1088409) + 2)
+	requestString := frontHalf + fmt.Sprint(id) + backHalf
+	resp, err = http.Get(requestString)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	//If invalid, makes requests until it gets an OK response
+	for resp.StatusCode != 200 {
+		//replace numbers with variables later- formula is rng times max - min plus min
+		id = int((rng.Float64() * 1088409) + 2)
+		requestString = frontHalf + fmt.Sprint(id) + backHalf
+		resp, err = http.Get(requestString)
+		if err != nil {
+			log.Fatal(err)
+		}
+		executions++
+	}
+	//prints out number of subsequent requests made
+	fmt.Println(executions)
 	defer resp.Body.Close()
 
 	//reads body of response and converts it into binary
@@ -232,6 +273,44 @@ func generateMovie(context *gin.Context) {
 	JSONstring := string(body)
 	//takes the string and sends it back to frontend as JSON
 	context.JSON(http.StatusOK, JSONstring)
+}
+
+/*
+Scans local API database to check for largest and smallest possible movie IDs
+
+How to use:
+1. Comment out all of the router functions in main
+2. Call this function in main
+3. Profit
+*/
+func scanValidIDs() {
+	//maybe implement automatic fetch and unzipping
+	//ids start at 2 for some reason
+	file, err := os.Open("movie_ids_02_18_2023.json")
+	if err != nil {
+		panic("file opening failed!")
+	}
+	defer file.Close()
+	fileScanner := bufio.NewScanner(file)
+	largest := 0
+	smallest := 4294967295
+	for fileScanner.Scan() {
+		var lineStruct parseStruct
+		//gets line of JSON file
+		binaryLine := fileScanner.Bytes()
+		//unmarshals binary into a struct
+		json.Unmarshal(binaryLine, &lineStruct)
+		if lineStruct.Id > largest {
+			largest = lineStruct.Id
+		}
+		if lineStruct.Id < smallest {
+			smallest = lineStruct.Id
+		}
+		//database.InsertOne(context.Background(), lineStruct)
+
+	}
+	fmt.Println("Largest: " + fmt.Sprint(largest))
+	fmt.Println("Smallest: " + fmt.Sprint(smallest))
 }
 
 func main() {
@@ -268,6 +347,7 @@ func main() {
 	*/
 
 	//Sets up routing
+
 	router := gin.Default()
 	router.GET("/login", login)
 	router.GET("/generate", generateMovie)
@@ -277,4 +357,6 @@ func main() {
 	router.DELETE("/:username/delete", removeUser)
 	router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
 	router.Run("localhost:8080")
+
+	//scanValidIDs()
 }
