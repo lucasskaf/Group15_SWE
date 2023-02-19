@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"io"
 
 	//"gorm.io/driver/sqlite"
 	//"gorm.io/gorm"
@@ -211,6 +212,28 @@ func updateUserInfo(context *gin.Context) {
 	}
 }
 
+// credit for movie API goes to The Movie DB (TMDB)
+// "This product uses the TMDB API but is not endorsed or certified by TMDB." - Put this in the frontend
+// our API key: 010c2ddcdf323db029b6dca4cbfa49de
+func generateMovie(context *gin.Context) {
+	resp, err := http.Get("https://api.themoviedb.org/3/movie/550?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer resp.Body.Close()
+
+	//reads body of response and converts it into binary
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	//converts the binary output into a string for return
+	JSONstring := string(body)
+	//takes the string and sends it back to frontend as JSON
+	context.JSON(http.StatusOK, JSONstring)
+}
+
 func main() {
 	//database connection boilerplate
 	/*
@@ -247,6 +270,7 @@ func main() {
 	//Sets up routing
 	router := gin.Default()
 	router.GET("/login", login)
+	router.GET("/generate", generateMovie)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
 	router.PUT("/:username/update", updateUserInfo)
