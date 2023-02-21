@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"time"
+	"strings"
 
 	//"gorm.io/driver/sqlite"
 	//"gorm.io/gorm"
@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
@@ -39,10 +40,11 @@ type Movie struct {
 	DatabaseID int      `json:"databaseid"`
 }
 
-// struct for getting IDs from movie databse
+// struct for getting IDs from movie database
 type parseStruct struct {
-	//Adult          bool    `json:"adult"`
-	Id int `json:"id"`
+	Adult             bool   `json:"adult"`
+	Id                int    `json:"id"`
+	Original_Language string `json:"original_language"`
 	//Original_Title string  `json:"original_title"`
 	//Popularity     float32 `json:"popularity"`
 	//Video          bool    `json:"video"`
@@ -59,6 +61,21 @@ type User struct {
 	Subscriptions []string `json:"subscriptions"`
 }
 
+type ForumPost struct {
+	Poster    string         `json:"poster"`
+	Timestamp time.Time      `json:"timestamp"` //golang standard struct
+	Body      string         `json:"body"`
+	Score     int            `json:"score"`
+	Comments  []ForumComment `json:"comments"`
+}
+
+type ForumComment struct {
+	Commenter string    `json:"commenter"`
+	Timestamp time.Time `json:"timestamp"`
+	Body      string    `json:"body"`
+	Score     int       `json:"score"`
+}
+
 func connectToDB() (client *mongo.Client) {
 	if err := godotenv.Load("go.env"); err != nil {
 		log.Println("No .env file found")
@@ -67,7 +84,9 @@ func connectToDB() (client *mongo.Client) {
 	if uri == "" {
 		log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
 	}
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://test:1234@cluster0.aruhgq1.mongodb.net/?retryWrites=true&w=majority"))
+	//online cluster mongodb+srv://test:1234@cluster0.aruhgq1.mongodb.net/?retryWrites=true&w=majority
+	//local cluster URL mongodb://localhost:27017/
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017/"))
 	if err != nil {
 		panic(err)
 	}
@@ -232,7 +251,7 @@ func updateUserInfo(context *gin.Context) {
 our API key: 010c2ddcdf323db029b6dca4cbfa49de
 As of 2/18/2022, the largest possible movie ID is 1088411, while the smallest possible movie ID is 2
 */
-func generateMovie(context *gin.Context) {
+func randomMovie(context *gin.Context) {
 	//rng uses current time as a seed
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
 	frontHalf := "https://api.themoviedb.org/3/movie/"
@@ -249,8 +268,9 @@ func generateMovie(context *gin.Context) {
 		log.Fatal(err)
 	}
 
+	appropriate := false
 	//If invalid, makes requests until it gets an OK response
-	for resp.StatusCode != 200 {
+	for resp.StatusCode != 200 || appropriate == false {
 		//replace numbers with variables later- formula is rng times max - min plus min
 		id = int((rng.Float64() * 1088409) + 2)
 		requestString = frontHalf + fmt.Sprint(id) + backHalf
@@ -258,12 +278,19 @@ func generateMovie(context *gin.Context) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		//filtering mechanism
+		binary, err := io.ReadAll(resp.Body)
+		var movieData parseStruct
+		if err != nil {
+			log.Fatal(err)
+		}
+		json.Unmarshal(binary, &movieData)
+		appropriate = filterMovies(&movieData)
 		executions++
 	}
 	//prints out number of subsequent requests made
 	fmt.Println(executions)
 	defer resp.Body.Close()
-
 	//reads body of response and converts it into binary
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -273,6 +300,22 @@ func generateMovie(context *gin.Context) {
 	JSONstring := string(body)
 	//takes the string and sends it back to frontend as JSON
 	context.JSON(http.StatusOK, JSONstring)
+}
+
+func filterMovies(m *parseStruct) bool {
+	//checks if movie contains adult content
+	if m.Adult == false {
+		return false
+	}
+	//checks if movie is in English
+	en := strings.Contains(m.Original_Language, "en")
+	if en == false {
+		return false
+	}
+	return true
+}
+func createPost(context *gin.Context) {
+
 }
 
 /*
@@ -314,45 +357,14 @@ func scanValidIDs() {
 }
 
 func main() {
-	//database connection boilerplate
-	/*
-		if err := godotenv.Load("go.env"); err != nil {
-			log.Println("No .env file found")
-		}
-		uri := os.Getenv("MONGODB_URI")
-		if uri == "" {
-			log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
-		}
-		client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
-		if err != nil {
-			panic(err)
-		}
-		defer func() {
-			if err := client.Disconnect(context.TODO()); err != nil {
-				panic(err)
-			}
-		}()*/
-
-	//alias to easily access database
-	//database := client.Database("UserInfo").Collection("UserInfo")
-	//comment out insertion of test user if they are already in database
-	/*
-
-		newUser := User{Username: "test", Password: "1234"}
-		result, err := database.InsertOne(context.TODO(), newUser)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("Document inserted with ID: %s\n", result.InsertedID)
-	*/
-
 	//Sets up routing
 
 	router := gin.Default()
 	router.GET("/login", login)
-	router.GET("/generate", generateMovie)
+	router.GET("/generate", randomMovie)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
+	router.POST("/forum/post", createPost)
 	router.PUT("/:username/update", updateUserInfo)
 	router.DELETE("/:username/delete", removeUser)
 	router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
