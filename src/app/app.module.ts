@@ -5,6 +5,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { LoginRegisterComponent } from './login-register/login-register.component'
 import { MatIconModule } from '@angular/material/icon'
+import {MatButtonModule} from '@angular/material/button';
 
 @NgModule({
   declarations: [
@@ -15,7 +16,8 @@ import { MatIconModule } from '@angular/material/icon'
     BrowserModule,
     HttpClientModule,
     AppRoutingModule,
-    MatIconModule
+    MatIconModule,
+    MatButtonModule
   ],
   providers: [],
   bootstrap: [AppComponent]
