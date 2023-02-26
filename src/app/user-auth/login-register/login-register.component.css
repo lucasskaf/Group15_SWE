@@ -17,14 +17,11 @@ body {
 
 h1 {
 	font-weight: bold;
-	margin-bottom: 5%;
 	margin: 0;
 }
 
 h2 {
-	font-size: 2rem;
 	text-align: center;
-	margin-bottom: 5%;
 }
 
 p {
@@ -51,7 +48,6 @@ button {
 	border: 1px solid #D33F49;
 	background-color: #D33F49;
 	color: #FFFFFF;
-	margin-top: 5%;
 	font-size: 12px;
 	font-weight: bold;
 	padding: 12px 45px;
@@ -99,7 +95,6 @@ input {
 }
 
 .container {
-	font-family: 'Montserrat', sans-serif;
     margin: 0 auto;
 	background-color: #fff;
 	border-radius: 10px;
