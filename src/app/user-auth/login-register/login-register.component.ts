@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { loginInteraction, closeLogin } from './login-register'
+import { loginInteraction } from './login-register'
+import { closeLogin } from './login-register'
 
 @Component({
   selector: 'app-login-register',
@@ -9,8 +10,8 @@ import { loginInteraction, closeLogin } from './login-register'
 export class LoginRegisterComponent {
   
   ngOnInit(): void {
-    const loginAnimation = loginInteraction()
-    const closeFunctionality = closeLogin()
+    const functionality = loginInteraction()
+    const closeButton = closeLogin()
   }
 
 }
