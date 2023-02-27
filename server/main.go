@@ -1,22 +1,23 @@
-
 package main
 
 //imports commented out to avoid generating errors for unused
 
 import (
 	"context"
+	"strings"
 
 	//"gorm.io/driver/sqlite"
 	//"gorm.io/gorm"
-
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	//"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -26,23 +27,30 @@ import (
 )
 
 type Movie struct {
-	Genres    []string  `json:"genres"`
-	Title     string    `json:"title"`
-	Runtime   float32   `json:"runtime"`
-	Rating    int32     `json:"rating"`
-	Providers []string  `json:"providers"`  
-
+	Title     string   `json:"title"`
+	Director  string   `json:"director"`
+	Imglink   string   `json:"imglink"`
+	Runtime   float32  `json:"runtime"`
+	Avgrating float32  `json:"avgrating"`
+	Providers []string `json:"providers"`
 }
 
 // the names of fields MUST be uppercase or else MongoDB will NOT store them
 type User struct {
-	Username  string   `json:"username"`
-	Password  string   `json:"password"`
-	Email     string   `json:"email"`
-	Watchlist []Movie  `json:"watchlist"`
-	// Genres    []string `json:"genres"`
-	// Rating    float32  `json:"rating"`
-	// Providers []string `json:"providers"`
+	Username      string   `json:"username"`
+	Password      string   `json:"password"`
+	Email         string   `json:"email"`
+	Watchlist     []Movie  `json:"watchlist"`
+	Posts         []Post   `json:"posts"`
+	Genres        []string `json:"genres"`
+	Rating        float32  `json:"rating"`
+	Subscriptions []string `json:"subscriptions"`
+}
+
+type Post struct {
+	PostID primitive.ObjectID `json:"id"`
+	Title  string             `json:"title"`
+	Body   string             `json:"body"`
 }
 
 func connectToDB() (client *mongo.Client) {
@@ -53,6 +61,8 @@ func connectToDB() (client *mongo.Client) {
 	if uri == "" {
 		log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
 	}
+	//online cluster mongodb+srv://test:1234@cluster0.aruhgq1.mongodb.net/?retryWrites=true&w=majority
+	//local cluster URL mongodb://localhost:27017/
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
@@ -60,6 +70,21 @@ func connectToDB() (client *mongo.Client) {
 	return client
 }
 
+// this function is needed to generate a unique token for the logged in user, which is used to authorize the user when wanting to send any requests such as creating a post
+func generateToken(currentUser User) (string, error) {
+	token := jwt.New(jwt.SigningMethodHS256)
+
+	claims := token.Claims.(jwt.MapClaims)
+	claims["Authorized"] = true
+	claims["username"] = currentUser.Username
+	claims["expirationDate"] = time.Now().Add(time.Hour * 24).Unix()
+
+	tokString, err := token.SignedString([]byte("sayhellotomylittlefriend"))
+	if err != nil {
+		return "", err
+	}
+	return tokString, nil
+}
 func login(context *gin.Context) {
 	client := connectToDB()
 	var credentials User
@@ -82,6 +107,16 @@ func login(context *gin.Context) {
 		}
 		panic(err)
 	}
+
+	token, err := generateToken(retrieved)
+	if err != nil {
+		panic(err)
+	}
+
+	context.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
+
 	context.IndentedJSON(http.StatusOK, retrieved)
 	fmt.Printf("login successful!")
 	client.Disconnect(context)
@@ -95,56 +130,65 @@ func createUser(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
 	}
+	newUser.Posts = []Post{}
 	database.InsertOne(context, newUser)
 	client.Disconnect(context)
 }
 
-// func watchMovie(context *gin.Context) {
-// 	client := connectToDB()
-// 	database := client.Database("UserInfo").Collection("MoviesWatched")
-// 	var newMovie Movie
-// 	if err := context.BindJSON(&newMovie); err != nil {
-// 		fmt.Printf("JSON bind failed!")
-// 		return //catches null requests and throws error.
-// 	}
-// 	database.InsertOne(context, newMovie)
-// 	client.Disconnect(context)
-// }
+func createPost(context *gin.Context) {
+	header := context.GetHeader("Authorization") // gets "Bearer token"
+	if header == "" {                            // checks if the authorization header is empty or not and throws error if it is
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+		return
+	}
+	headerToken := strings.ReplaceAll(header, "Bearer ", "") // gets the token only, which is everything after "Bearer"
+	// Now we parse through the token and check that it is valid, if not, then error
+	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
+		}
+		return []byte("sayhellotomylittlefriend"), nil
+	})
+	if err != nil || !userToken.Valid {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+		return
+	}
 
-// func watchlist(context *gin.Context) {
-// 	client := connectToDB() // connect to database
-// 	database := client.Database("UserInfo").Collection("MoviesWatched") // using the movies watched collection
+	// Using claims and the token, we get the username that has this token
+	claims, _ := userToken.Claims.(jwt.MapClaims)
+	username := claims["username"].(string)
 
-// 	var newMovie Movie
-// 	if err := context.BindJSON(&newMovie); err != nil {
-// 		fmt.Printf("JSON bind failed!")
-// 		return //catches null requests and throws error.
-// 	}
-// 	database.InsertOne(context, newMovie)
-// 	client.Disconnect(context)
+	client := connectToDB() // connect to MongoDB database
 
-// 	var credentials Movie
-// 	if err := context.BindJSON(&credentials); err != nil {
-// 		fmt.Printf("Json binding failed")
-// 	}
-	
-// 	filter := bson.D{{"title", credentials.Title}, {"genre", credentials.Genres}}
-// 	var retrieved Movie
-// 	err := database.FindOne(context, filter).Decode(&retrieved)
-// 	if err != nil {
-// 		if err == mongo.ErrNoDocuments {
-// 			// This means that current movie has not been found for the user, so it wont get added
-// 			fmt.Println("movie has not been watched")
-// 			var emptyStruct Movie
-// 			context.IndentedJSON(http.StatusOK, emptyStruct)
-// 			return
-// 		}
-// 		panic(err)
-// 	}
-// 	context.IndentedJSON(http.StatusOK, retrieved)
-// 	fmt.Printf("Movie watched/added")
-// 	client.Disconnect(context)
-// }
+	// Create a new post
+	var newPost Post
+	if err := context.BindJSON(&newPost); err != nil {
+		fmt.Printf("JSON bind failed!")
+		return
+	}
+
+	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
+	database := client.Database("ForumPosts").Collection("ForumPosts")
+	result, err := database.InsertOne(context, newPost)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
+		return
+	}
+
+	postID := result.InsertedID.(primitive.ObjectID)
+	userDatabase := client.Database("UserInfo").Collection("UserInfo")
+	filter := bson.M{"username": username}
+	updateUserPosts := bson.M{"$push": bson.M{"posts": newPost}}
+	_, err = userDatabase.UpdateOne(context, filter, updateUserPosts)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add post to user's post array"})
+	}
+
+	newPost.PostID = postID
+	context.JSON(http.StatusCreated, newPost)
+	fmt.Println("Post successfuly created")
+	client.Disconnect(context)
+}
 
 func main() {
 	//database connection boilerplate
@@ -162,7 +206,6 @@ func main() {
 		}
 		defer func() {
 			if err := client.Disconnect(context.TODO()); err != nil {
-			
 				panic(err)
 			}
 		}()*/
@@ -181,13 +224,9 @@ func main() {
 	*/
 
 	//Sets up routing
-	
-
 	router := gin.Default()
 	router.GET("/login", login)
 	router.POST("/signup", createUser)
-	// router.GET("/watchlist", watchlist)
-	
+	router.POST("/posts", createPost)
 	router.Run("localhost:8080")
-	
 }
