@@ -9,4 +9,9 @@ import {Component, OnInit} from '@angular/core';
 
 export class AppComponent {
   title = 'BingeBuddy';
+  isLoginOpen = false
+
+  toogleLoginStatus(loginStatus : boolean) {
+    this.isLoginOpen = loginStatus;
+  }
 }
