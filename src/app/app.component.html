@@ -1,2 +1,3 @@
-<app-login-register></app-login-register>
+<bb-nav-bar (openLogin)="toogleLoginStatus($event)" [loginStatus]="isLoginOpen"></bb-nav-bar>
+<bb-login-register [isOpen]="isLoginOpen" (isClosed)="toogleLoginStatus($event)"></bb-login-register>
 <h1>Home Page Test</h1>

@@ -13,14 +13,3 @@ export function loginInteraction() {
       });
     }
 }
-
-export function closeLogin() {
-  const closeButton: HTMLElement | null = document.getElementById('closeButton');
-  const container: HTMLElement | null = document.getElementById('container');
-
-  if(closeButton != null && container != null){
-    closeButton.addEventListener('click', () => {
-      container.classList.add("closed")
-    })
-  }
-}
