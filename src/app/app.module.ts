@@ -7,6 +7,7 @@ import { LoginRegisterComponent } from './login-register/login-register.componen
 import { MatIconModule } from '@angular/material/icon'
 import {MatButtonModule} from '@angular/material/button';
 import { NavBarComponent } from './nav-bar/nav-bar.component';
+import { UserAuthModule } from './user-auth/user-auth.module';
 
 @NgModule({
   declarations: [
@@ -20,6 +21,7 @@ import { NavBarComponent } from './nav-bar/nav-bar.component';
     AppRoutingModule,
     MatIconModule,
     MatButtonModule
+    UserAuthModule
   ],
   providers: [],
   bootstrap: [AppComponent]
