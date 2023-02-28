@@ -86,7 +86,7 @@ func connectToDB() (client *mongo.Client) {
 	}
 	//online cluster mongodb+srv://test:1234@cluster0.aruhgq1.mongodb.net/?retryWrites=true&w=majority
 	//local cluster URL mongodb://localhost:27017/
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017/"))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://test:1234@cluster0.aruhgq1.mongodb.net/?retryWrites=true&w=majority"))
 	if err != nil {
 		panic(err)
 	}
@@ -267,10 +267,11 @@ func randomMovie(context *gin.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	//stores response body in binary
+	var body []byte
 	appropriate := false
 	//If invalid, makes requests until it gets an OK response
-	for resp.StatusCode != 200 || appropriate == false {
+	for resp.StatusCode != 200 || !appropriate {
 		//replace numbers with variables later- formula is rng times max - min plus min
 		id = int((rng.Float64() * 1088409) + 2)
 		requestString = frontHalf + fmt.Sprint(id) + backHalf
@@ -286,17 +287,12 @@ func randomMovie(context *gin.Context) {
 		}
 		json.Unmarshal(binary, &movieData)
 		appropriate = filterMovies(&movieData)
+		body = binary
 		executions++
 	}
-	//prints out number of subsequent requests made
+	//prints out number of subsequent requests made - for testing ONLY
 	fmt.Println(executions)
-	defer resp.Body.Close()
-	//reads body of response and converts it into binary
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	//converts the binary output into a string for return
+	//converts the binary output intof a string for return
 	JSONstring := string(body)
 	//takes the string and sends it back to frontend as JSON
 	context.JSON(http.StatusOK, JSONstring)
@@ -304,12 +300,12 @@ func randomMovie(context *gin.Context) {
 
 func filterMovies(m *parseStruct) bool {
 	//checks if movie contains adult content
-	if m.Adult == false {
+	if m.Adult {
 		return false
 	}
 	//checks if movie is in English
 	en := strings.Contains(m.Original_Language, "en")
-	if en == false {
+	if !en {
 		return false
 	}
 	return true
