@@ -136,7 +136,7 @@ func login(context *gin.Context) {
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			// prints debug message and sends back empty JSON struct if password is wrong
-			fmt.Printf("username or password is incorrect")
+			fmt.Println("username or password is incorrect")
 			var emptyStruct User
 			context.IndentedJSON(http.StatusOK, emptyStruct)
 			return
