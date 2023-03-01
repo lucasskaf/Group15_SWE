@@ -1,12 +1,17 @@
-<mat-toolbar color="primary">
-    <mat-toolbar-row>
+<div class="nav-bar">
+    <div class="sidenav-button">
         <button mat-icon-button id="sidenav-button" (click)="onSidenavClick()">
-            <mat-icon>menu</mat-icon>
+            <mat-icon color="accent">menu</mat-icon>
         </button>
-        <span>Binge Buddy</span>
-
-        <div class="spacer"></div>
-
-        <a mat-button>Home</a>
-    </mat-toolbar-row>
-</mat-toolbar>
+        <h2>Binge <span>Buddy</span></h2>
+    </div>
+    <div class="nav-buttons">
+        <button mat-raised-button color="warn" class="bb-button" id="home-button">
+            <div class="button-label-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="29" height="25" viewBox="0 0 29 25"><path fill="#FFF" d="M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8h5Z"/>
+                </svg>
+                Home
+            </div>
+        </button>
+    </div>
+</div>
