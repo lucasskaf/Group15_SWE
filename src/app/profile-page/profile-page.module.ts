@@ -8,12 +8,16 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MainComponent } from './main/main.component';
+import { WatchedComponent } from './watched/watched.component';
+import { PostsComponent } from './posts/posts.component';
 
 @NgModule({
   declarations: [
     NavbarComponent,
     SidebarComponent,
-    MainComponent
+    MainComponent,
+    WatchedComponent,
+    PostsComponent
   ],
   imports: [
     CommonModule,

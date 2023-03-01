@@ -6,7 +6,7 @@ import { Component } from '@angular/core';
   styleUrls: ['./main.component.css']
 })
 export class MainComponent {
-  isSidenavOpen: boolean = false
+  isSidenavOpen: boolean = true
 
   public toggleSidenavStatus(event: boolean): void {
     this.isSidenavOpen = event
