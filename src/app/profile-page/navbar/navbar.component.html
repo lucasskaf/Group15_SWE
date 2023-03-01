@@ -1,7 +1,12 @@
 <mat-toolbar color="primary">
-    <span>Binge Buddy</span>
+    <mat-toolbar-row>
+        <button mat-icon-button id="sidenav-button" (click)="onSidenavClick()">
+            <mat-icon>menu</mat-icon>
+        </button>
+        <span>Binge Buddy</span>
 
-    <div class="spacer"></div>
+        <div class="spacer"></div>
 
-    <a mat-button>Home</a>
-  </mat-toolbar>
+        <a mat-button>Home</a>
+    </mat-toolbar-row>
+</mat-toolbar>

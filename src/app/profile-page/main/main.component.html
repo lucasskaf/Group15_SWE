@@ -1,0 +1,2 @@
+<app-navbar (openSidenav)="toggleSidenavStatus($event)" [sidenavStatus]="isSidenavOpen"></app-navbar>
+<app-sidebar [isOpen]="isSidenavOpen" (isClosed)="toggleSidenavStatus($event)"></app-sidebar>

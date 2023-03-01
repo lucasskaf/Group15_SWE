@@ -1,0 +1,23 @@
+<mat-sidenav-container *ngIf="isOpen">
+    <mat-sidenav opened mode="side">
+        <div class="sidenav-style">
+            <div class="profile-image">
+                <img src="/assets/profile.jfif" alt="">
+            </div>  
+        </div>
+
+        <div class="sidenav-divs">
+            <mat-nav-list>
+                <div class="username">
+                    <b>Ernesto Roja</b>
+                </div>
+                <a mat-list-item>Settings</a>
+                <a mat-list-item>Logout</a>
+            </mat-nav-list>
+        </div>
+    </mat-sidenav>
+
+    <mat-sidenav-content>
+        <div style="height: 95.2vh;"></div>
+    </mat-sidenav-content>
+</mat-sidenav-container>
