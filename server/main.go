@@ -1,13 +1,9 @@
 package main
 
-//imports commented out to avoid generating errors for unused
-
 import (
 	"context"
 	"strings"
 
-	//"gorm.io/driver/sqlite"
-	//"gorm.io/gorm"
 	"fmt"
 	"log"
 	"os"
@@ -26,6 +22,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// this is the movie struct that contains all the different fields for a movie
 type Movie struct {
 	Title     string   `json:"title"`
 	Director  string   `json:"director"`
@@ -35,7 +32,7 @@ type Movie struct {
 	Providers []string `json:"providers"`
 }
 
-// the names of fields MUST be uppercase or else MongoDB will NOT store them
+// this is the user struct that contains all the different fields for a certain user
 type User struct {
 	Username      string   `json:"username"`
 	Password      string   `json:"password"`
@@ -47,12 +44,15 @@ type User struct {
 	Subscriptions []string `json:"subscriptions"`
 }
 
+// this is the post struct that contains all the different fields for a certain post
 type Post struct {
 	PostID primitive.ObjectID `json:"id"`
 	Title  string             `json:"title"`
 	Body   string             `json:"body"`
+	Date   string             `json:"date"`
 }
 
+// this function connects the server/client to mongodb database whenever it is called
 func connectToDB() (client *mongo.Client) {
 	if err := godotenv.Load("go.env"); err != nil {
 		log.Println("No .env file found")
@@ -85,6 +85,8 @@ func generateToken(currentUser User) (string, error) {
 	}
 	return tokString, nil
 }
+
+// this function authenticates the user that is trying to log in and provides the unique token for said user
 func login(context *gin.Context) {
 	client := connectToDB()
 	var credentials User
@@ -122,6 +124,7 @@ func login(context *gin.Context) {
 	client.Disconnect(context)
 }
 
+// this function creates a brand new user and inserts it into the database
 func createUser(context *gin.Context) {
 	client := connectToDB()
 	database := client.Database("UserInfo").Collection("UserInfo")
@@ -135,6 +138,7 @@ func createUser(context *gin.Context) {
 	client.Disconnect(context)
 }
 
+// this function creates a new post for the logged in user
 func createPost(context *gin.Context) {
 	header := context.GetHeader("Authorization") // gets "Bearer token"
 	if header == "" {                            // checks if the authorization header is empty or not and throws error if it is
@@ -167,15 +171,22 @@ func createPost(context *gin.Context) {
 		return
 	}
 
+	date := time.Now().Format("January 2, 2006")
 	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
-	database := client.Database("ForumPosts").Collection("ForumPosts")
-	result, err := database.InsertOne(context, newPost)
+	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
+	result, err := postDatabase.InsertOne(context, bson.M{
+		"title": newPost.Title,
+		"body":  newPost.Body,
+		"date":  date,
+	})
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
 		return
 	}
 
-	postID := result.InsertedID.(primitive.ObjectID)
+	newPost.PostID = result.InsertedID.(primitive.ObjectID)
+	newPost.Date = date
+
 	userDatabase := client.Database("UserInfo").Collection("UserInfo")
 	filter := bson.M{"username": username}
 	updateUserPosts := bson.M{"$push": bson.M{"posts": newPost}}
@@ -184,49 +195,79 @@ func createPost(context *gin.Context) {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add post to user's post array"})
 	}
 
-	newPost.PostID = postID
 	context.JSON(http.StatusCreated, newPost)
 	fmt.Println("Post successfuly created")
 	client.Disconnect(context)
 }
 
+// this function deletes a post for the logged in user
+func deletePost(context *gin.Context) {
+	header := context.GetHeader("Authorization")
+	if header == "" {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+		return
+	}
+
+	headerToken := strings.ReplaceAll(header, "Bearer ", "")
+	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
+		}
+		return []byte("sayhellotomylittlefriend"), nil
+	})
+
+	if err != nil || !userToken.Valid {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+		return
+	}
+
+	postID := context.Param("postID")
+	objectID, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "This is an invalid post ID"})
+		return
+	}
+
+	claims, _ := userToken.Claims.(jwt.MapClaims)
+	username := claims["username"].(string)
+	client := connectToDB()
+
+	userDatabase := client.Database("UserInfo").Collection("UserInfo")
+	filter := bson.M{"username": username, "posts.postid": objectID}
+	checker, err := userDatabase.CountDocuments(context, filter)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check user's posts"})
+		return
+	}
+	if checker == 0 {
+		context.JSON(http.StatusForbidden, gin.H{"error": "You cannot delete a post that is not yours!"})
+		return
+	}
+
+	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
+	_, err = postDatabase.DeleteOne(context, bson.M{"_id": objectID})
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete post from ForumPosts collection"})
+		return
+	}
+
+	update := bson.M{"$pull": bson.M{"posts": bson.M{"postid": objectID}}}
+	_, err = userDatabase.UpdateOne(context, filter, update)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove post from user array"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Post deleted successfuly"})
+	client.Disconnect(context)
+}
+
 func main() {
-	//database connection boilerplate
-	/*
-		if err := godotenv.Load("go.env"); err != nil {
-			log.Println("No .env file found")
-		}
-		uri := os.Getenv("MONGODB_URI")
-		if uri == "" {
-			log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
-		}
-		client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
-		if err != nil {
-			panic(err)
-		}
-		defer func() {
-			if err := client.Disconnect(context.TODO()); err != nil {
-				panic(err)
-			}
-		}()*/
-
-	//alias to easily access database
-	//database := client.Database("UserInfo").Collection("UserInfo")
-	//comment out insertion of test user if they are already in database
-	/*
-
-		newUser := User{Username: "test", Password: "1234"}
-		result, err := database.InsertOne(context.TODO(), newUser)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("Document inserted with ID: %s\n", result.InsertedID)
-	*/
-
 	//Sets up routing
 	router := gin.Default()
 	router.GET("/login", login)
 	router.POST("/signup", createUser)
 	router.POST("/posts", createPost)
+	router.DELETE("/posts/:postID", deletePost)
 	router.Run("localhost:8080")
 }
