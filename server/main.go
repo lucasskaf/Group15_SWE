@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
-	"strings"
+
+	//"gorm.io/driver/sqlite"
+	//"gorm.io/gorm"
 
 	"fmt"
 	"log"
@@ -13,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/dgrijalva/jwt-go"
+	//"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -24,12 +26,12 @@ import (
 
 // this is the movie struct that contains all the different fields for a movie
 type Movie struct {
-	Title     string   `json:"title"`
-	Director  string   `json:"director"`
-	Imglink   string   `json:"imglink"`
-	Runtime   float32  `json:"runtime"`
-	Avgrating float32  `json:"avgrating"`
-	Providers []string `json:"providers"`
+	Genres    []string  `json:"genres"`
+	Title     string    `json:"title"`
+	Runtime   float32   `json:"runtime"`
+	Rating    int32     `json:"rating"`
+	Providers []string  `json:"providers"`  
+
 }
 
 // this is the user struct that contains all the different fields for a certain user
