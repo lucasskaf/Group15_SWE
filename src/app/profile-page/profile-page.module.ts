@@ -10,14 +10,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MainComponent } from './main/main.component';
 import { WatchedComponent } from './watched/watched.component';
 import { PostsComponent } from './posts/posts.component';
+import { NavBarComponent } from '../nav-bar/nav-bar.component';
 
 @NgModule({
   declarations: [
-    NavbarComponent,
     SidebarComponent,
     MainComponent,
     WatchedComponent,
-    PostsComponent
+    PostsComponent,
+    NavbarComponent
   ],
   imports: [
     CommonModule,
