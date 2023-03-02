@@ -1,4 +1,4 @@
-import { Component, Output, Input, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Output, Input } from '@angular/core';
 
 @Component({
   selector: 'app-nav-bar',
@@ -6,16 +6,17 @@ import { Component, Output, Input, EventEmitter } from '@angular/core';
   styleUrls: ['./nav-bar.component.css']
 })
 export class NavBarComponent {
-  @Output() openLogin = new EventEmitter<boolean>();
-  @Input() loginStatus: boolean = false;
-  
+  @Output() openLogin = new EventEmitter()
+  @Input() loginStatus : boolean = false
+
   constructor() { }
 
   ngOnInit() {
 
   }
 
-  public onLoginClick() {
+  onLoginClick() {
+    console.log("Login Opened")
     this.openLogin.emit(!this.loginStatus)
     this.loginStatus = !this.loginStatus
   }
