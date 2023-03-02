@@ -86,7 +86,7 @@ func connectToDB() (client *mongo.Client) {
 	}
 	//online cluster mongodb+srv://test:1234@cluster0.aruhgq1.mongodb.net/?retryWrites=true&w=majority
 	//local cluster URL mongodb://localhost:27017/
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017/"))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://test:1234@cluster0.aruhgq1.mongodb.net/?retryWrites=true&w=majority"))
 	if err != nil {
 		panic(err)
 	}
@@ -136,15 +136,15 @@ func createUser(context *gin.Context) {
 	}
 
 	//checks for duplicate username
-	var duplicate User
-	filter := bson.D{{"username", newUser.Username}}
-	err := database.FindOne(context, filter).Decode(&duplicate)
-	if err != mongo.ErrNoDocuments {
-		fmt.Printf("username is taken")
-		var emptyStruct User
-		context.IndentedJSON(http.StatusBadRequest, emptyStruct)
-		return
-	}
+	// var duplicate User
+	// filter := bson.D{{"username", newUser.Username}}
+	// err := database.FindOne(context, filter).Decode(&duplicate)
+	// if err != mongo.ErrNoDocuments {
+	// 	fmt.Printf("username is taken")
+	// 	var emptyStruct User
+	// 	context.IndentedJSON(http.StatusBadRequest, emptyStruct)
+	// 	return
+	// }
 	database.InsertOne(context, newUser)
 	client.Disconnect(context)
 }
@@ -355,10 +355,28 @@ func scanValidIDs() {
 	fmt.Println("Smallest: " + fmt.Sprint(smallest))
 }
 
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Header("Access-Control-Allow-Methods", "POST,HEAD,PATCH, OPTIONS, GET, PUT")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func main() {
 	//Sets up routing
 
 	router := gin.Default()
+	router.Use(CORSMiddleware())
 	router.GET("/login", login)
 	router.GET("/generate", randomMovie)
 	router.POST("/signup", createUser)
