@@ -3,6 +3,8 @@ body {
     margin: 0;
     padding: 0;
     height: 100%;
-    font-family: 'Montserrat', sans-serif; 
+    /* display: flex;
+    justify-content: center; */
+    font-family: 'Montserrat', sans-serif;
 }
 html, body { height: 100%; }
