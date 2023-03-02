@@ -1,4 +1,3 @@
-import { NavBarComponent } from "src/app/nav-bar/nav-bar.component";
 import { NavbarComponent } from "./navbar.component";
 
 describe('NavbarComponent', () => {
