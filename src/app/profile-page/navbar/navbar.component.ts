@@ -9,10 +9,6 @@ export class NavbarComponent {
   @Output() openSidenav = new EventEmitter<boolean>();
   @Input() sidenavStatus: boolean = false;
 
-  @Output() openLogin = new EventEmitter<boolean>();
-  @Input() loginStatus: boolean = false;
-  
-
   constructor() { }
 
   ngOnInit() {
@@ -22,10 +18,5 @@ export class NavbarComponent {
   public onSidenavClick(): void {
     this.openSidenav.emit(!this.sidenavStatus);
     this.sidenavStatus = !this.sidenavStatus
-  }
-
-  public onLoginClick() {
-    this.openLogin.emit(!this.loginStatus)
-    this.loginStatus = !this.loginStatus
   }
 }

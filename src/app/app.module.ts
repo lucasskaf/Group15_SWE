@@ -7,6 +7,11 @@ import { ProfilePageModule } from './profile-page/profile-page.module';
 import { UserAuthModule } from './user-auth/user-auth.module';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NavBarComponent } from './nav-bar/nav-bar.component';
+import { RouterModule, Routes } from '@angular/router';
+
+const appRoute: Routes = [
+  {path: 'profile', component: () => ProfilePageModule}
+]
 
 @NgModule({
   declarations: [
@@ -19,7 +24,7 @@ import { NavBarComponent } from './nav-bar/nav-bar.component';
     AppRoutingModule,
     UserAuthModule,
     ProfilePageModule,
-    BrowserAnimationsModule
+    BrowserAnimationsModule,
   ],
   providers: [],
   bootstrap: [AppComponent]
