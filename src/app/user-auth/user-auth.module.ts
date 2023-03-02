@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LoginRegisterComponent } from './login-register/login-register.component';
 import { MatIconModule } from '@angular/material/icon'
+import { ReactiveFormsModule } from '@angular/forms';
 
 
 @NgModule({
@@ -10,7 +11,8 @@ import { MatIconModule } from '@angular/material/icon'
   ],
   imports: [
     CommonModule,
-    MatIconModule
+    MatIconModule,
+    ReactiveFormsModule
   ],
   exports: [
     LoginRegisterComponent
