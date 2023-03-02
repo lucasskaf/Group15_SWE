@@ -367,7 +367,7 @@ func createPost(context *gin.Context) {
 		return []byte("sayhellotomylittlefriend"), nil
 	})
 	if err != nil || !userToken.Valid {
-		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized user"})
 		return
 	}
 
