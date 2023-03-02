@@ -163,6 +163,7 @@ func createUser(context *gin.Context) {
 	var newUser User
 	if err := context.BindJSON(&newUser); err != nil {
 		fmt.Printf("JSON bind failed!")
+		context.JSON(http.StatusAlreadyReported, gin.H{"error": "u r an idiot"})
 		return //catches null requests and throws error.
 	}
 	//throws error if username or password are blank
@@ -181,6 +182,7 @@ func createUser(context *gin.Context) {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Username is taken"})
 		return
 	}
+	newUser.Posts = []Post{}
 	database.InsertOne(context, newUser)
 	client.Disconnect(context)
 }
@@ -367,7 +369,7 @@ func createPost(context *gin.Context) {
 		return []byte("sayhellotomylittlefriend"), nil
 	})
 	if err != nil || !userToken.Valid {
-		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized user"})
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
 		return
 	}
 
