@@ -35,7 +35,7 @@ export class LoginRegisterService {
     return this.http.post<User>(`${this.serverURL}/signup`, user)
   }
 
-  // loginUser(user : User) {
-  //   return this.http.get(`${this.serverURL}/login`)
-  // }
+  loginUser(user : User) {
+    return this.http.post<User>(`${this.serverURL}/login`, user)
+  }
 }
