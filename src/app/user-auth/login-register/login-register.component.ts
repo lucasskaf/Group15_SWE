@@ -16,6 +16,7 @@ export class LoginRegisterComponent implements OnInit {
   @Input() isOpen : boolean = false
 
   formSignUp
+  formSignIn
 
   constructor(private formBuilder : FormBuilder,
     private loginRegisterService : LoginRegisterService) {}
@@ -24,6 +25,11 @@ export class LoginRegisterComponent implements OnInit {
     const loginAnimation = loginInteraction()
 
     this.formSignUp = this.formBuilder.group({
+      username: this.formBuilder.control('', Validators.required),
+      password: this.formBuilder.control('', Validators.required)
+    })
+
+    this.formSignIn = this.formBuilder.group({
       username: this.formBuilder.control('', Validators.required),
       password: this.formBuilder.control('', Validators.required)
     })
@@ -54,5 +60,14 @@ export class LoginRegisterComponent implements OnInit {
     })
 
     this.isOpen = false
+  }
+
+  loginUser(user : User) {
+    this.loginRegisterService.loginUser(user).subscribe((resp) => {
+      console.log(resp),
+      (err) => {
+        console.log(err)
+      }
+    })
   }
 }
