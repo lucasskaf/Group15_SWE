@@ -377,7 +377,7 @@ func main() {
 
 	router := gin.Default()
 	router.Use(CORSMiddleware())
-	router.GET("/login", login)
+	router.POST("/login", login)
 	router.GET("/generate", randomMovie)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
