@@ -18,12 +18,12 @@
       </form>
     </div>
     <div class="form-container sign-in-container">
-      <form action="#">
+      <form [formGroup]="formSignIn" (ngSubmit)="loginUser(formSignIn.value)" action="#">
         <h2><span id="welcome">Welcome to </span> <br> <span id="binge">Binge </span><span id="buddy">Buddy</span></h2>
-        <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
+        <input type="email" placeholder="Email" formControlName="username"/>
+        <input type="password" placeholder="Password" formControlName="password"/>
         <!-- <a href="#">Forgot your password?</a> -->
-        <button>Sign In</button>
+        <button type="submit">Sign In</button>
       </form>
     </div>
     <div class="overlay-container">
