@@ -1,18 +1,18 @@
 // import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-// import { WatchedComponent } from './watched.component';
+// import { MovieFormComponent } from './movie-form.component';
 
-// describe('WatchedComponent', () => {
-//   let component: WatchedComponent;
-//   let fixture: ComponentFixture<WatchedComponent>;
+// describe('MovieFormComponent', () => {
+//   let component: MovieFormComponent;
+//   let fixture: ComponentFixture<MovieFormComponent>;
 
 //   beforeEach(async () => {
 //     await TestBed.configureTestingModule({
-//       declarations: [ WatchedComponent ]
+//       declarations: [ MovieFormComponent ]
 //     })
 //     .compileComponents();
 
-//     fixture = TestBed.createComponent(WatchedComponent);
+//     fixture = TestBed.createComponent(MovieFormComponent);
 //     component = fixture.componentInstance;
 //     fixture.detectChanges();
 //   });
