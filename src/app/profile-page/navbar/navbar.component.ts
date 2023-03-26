@@ -7,7 +7,8 @@ import { Component, Output, Input, EventEmitter } from '@angular/core';
 })
 export class NavbarComponent {
   @Output() openSidenav = new EventEmitter<boolean>();
-  @Input() sidenavStatus: boolean = false;
+  // @Input() sidenavStatus: boolean = false;
+  @Input() sidenavStatus: boolean = true;
 
   constructor() { }
 
