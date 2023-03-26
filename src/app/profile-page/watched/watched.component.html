@@ -1,3 +1,7 @@
 <div class="watched-container">
     <h1>My Watched:</h1>
+
+    <div *ngFor="let movie of movies">
+        <app-movie [movieItem]="movie"></app-movie>
+    </div>
 </div>

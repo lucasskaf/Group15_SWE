@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms'
 import { MovieService } from '../../services/movie-service';
-import { Movie } from '../../common/movie';
+import { MovieComponent } from '../../common/movie/movie.component';
 
 @Component({
   selector: 'app-movie-form',
@@ -23,7 +23,9 @@ export class MovieFormComponent implements OnInit {
     });
   }
 
-  onSubmit(movie: Movie) {
+  onSubmit(movie: MovieComponent) {
     console.log(movie);
+    this.movieService.addWatchedMovie(movie);
+    this.form.reset();
   }
 }

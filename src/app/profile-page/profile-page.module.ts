@@ -12,6 +12,7 @@ import { MainComponent } from './main/main.component';
 import { WatchedComponent } from './watched/watched.component';
 import { PostsComponent } from './posts/posts.component';
 import { MovieFormComponent } from './movie-form/movie-form.component';
+import { MovieComponent } from '../common/movie/movie.component';
 
 @NgModule({
   declarations: [
@@ -20,7 +21,8 @@ import { MovieFormComponent } from './movie-form/movie-form.component';
     WatchedComponent,
     PostsComponent,
     NavbarComponent,
-    MovieFormComponent
+    MovieFormComponent,
+    MovieComponent
   ],
   imports: [
     CommonModule,

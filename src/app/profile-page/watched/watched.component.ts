@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { MovieService } from '../../services/movie-service';
-import { MovieFormComponent } from '../movie-form/movie-form.component';
-import { Movie } from '../../common/movie';
+import { MovieComponent } from '../../common/movie/movie.component';
 
 @Component({
   selector: 'app-watched',
@@ -9,20 +8,22 @@ import { Movie } from '../../common/movie';
   styleUrls: ['./watched.component.css']
 })
 export class WatchedComponent implements OnInit {
-  movies: Movie[] = [];
+  movies: MovieComponent[] = [];
+
+  printMovies() {
+    for (let n of this.movies) {
+      console.log(n);
+    }
+  }
 
   constructor(private movieService: MovieService) {}
 
   ngOnInit() {
     this.movies = this.movieService.getWatchedMovies();
+    this.printMovies();
   }
 
-  onMovieDelete(movie: Movie) {
+  onMovieDelete(movie: MovieComponent) {
     this.movieService.deleteWatchedMovie(movie);
-  }
-
-  onSubmit(movie: Movie) {
-    console.log(movie);
-    this.movieService.addWatchedMovie(movie);
   }
 }
