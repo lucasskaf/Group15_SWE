@@ -9,7 +9,8 @@ export class SidebarComponent implements OnInit {
 
   @Output() isClosed = new EventEmitter<boolean>();
   // @Input() isOpen : boolean = false
-  @Input() isOpen : boolean = true
+  @Input() isOpen : boolean = true;
+  isAddPopupOpen: boolean = false;
 
   constructor() { }
 
@@ -18,7 +19,11 @@ export class SidebarComponent implements OnInit {
   }
 
   toggleSidenav() {
-    this.isOpen = !this.isOpen
-    this.isClosed.emit(this.isOpen)
+    this.isOpen = !this.isOpen;
+    this.isClosed.emit(this.isOpen);
+  }
+
+  public toggleAddPopupStatus(event: boolean): void {
+    this.isAddPopupOpen = event;
   }
 }

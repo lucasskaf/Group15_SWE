@@ -13,6 +13,8 @@ import { WatchedComponent } from './watched/watched.component';
 import { PostsComponent } from './posts/posts.component';
 import { MovieFormComponent } from './movie-form/movie-form.component';
 import { MovieComponent } from '../common/movie/movie.component';
+import { AddPopupComponent } from './add-popup/add-popup.component';
+//import { routing } from './profile-page.routing';
 
 @NgModule({
   declarations: [
@@ -22,7 +24,8 @@ import { MovieComponent } from '../common/movie/movie.component';
     PostsComponent,
     NavbarComponent,
     MovieFormComponent,
-    MovieComponent
+    MovieComponent,
+    AddPopupComponent
   ],
   imports: [
     CommonModule,
@@ -32,6 +35,7 @@ import { MovieComponent } from '../common/movie/movie.component';
     MatListModule,
     MatIconModule,
     ReactiveFormsModule
+    //routing
   ],
   exports: [
     MatToolbarModule,

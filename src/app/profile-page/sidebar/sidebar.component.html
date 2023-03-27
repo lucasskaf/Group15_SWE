@@ -15,19 +15,17 @@
                 <a mat-list-item>Logout</a>
             </mat-nav-list>
         </div>
-
-        <app-movie-form></app-movie-form>
     </mat-sidenav>
 
     <mat-sidenav-content>
         <div style="height: 91.7vh;"></div>
         <div class="watched-section">
-            <app-watched></app-watched>
+            <app-watched (openAddPopup)="toggleAddPopupStatus($event)" [addPopupStatus]="isAddPopupOpen"></app-watched>
+            <app-add-popup [isOpen]="isAddPopupOpen" (isClosed)="toggleAddPopupStatus($event)"></app-add-popup>
         </div>
         <div class="posts-section">
             <app-posts></app-posts>
         </div>
     </mat-sidenav-content>
 
-    
 </mat-sidenav-container>
