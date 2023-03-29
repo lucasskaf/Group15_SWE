@@ -32,17 +32,34 @@ export class MovieFormComponent implements OnInit {
       ])),
       runtime: new FormControl('', Validators.compose([
         Validators.required,
-        this.ratingValidator
+        this.runtimeValidator
       ]))
     });
   }
 
+  // Only allows for singe digit values between 1-10.
   ratingValidator (control: FormControl) {
     const rating = control.value;
-    const maxRating = 999;
 
-    if (!/^\d{1,3}$/.test(rating) || parseInt(rating, 10) > maxRating) {
-      return { rating: true };
+    if (!rating || !/^[1-9]$|^10$/.test(rating)) {
+      return { rating: {min: 1, max: 10} };
+    }
+
+    return null;
+  }
+
+  // Only allows for runtimes below 999.
+  runtimeValidator (control: FormControl) {
+    const runtime = control.value;
+    const maxRuntime = 999;
+    const minRuntime = 1;
+
+    if (!runtime || parseInt(runtime, 10) > maxRuntime) {
+      return { 
+        runtime: {
+          min: minRuntime,
+          max: maxRuntime
+      } };
     }
     return null;
   }

@@ -3,10 +3,16 @@
         <li>
             <label for="title">Title:</label>
             <input type="text" name="title" id="title" formControlName="title">
+            <div *ngIf="form && form.get('title')?.hasError('pattern')" class="error">
+                No special characters allowed.
+            </div>
 
         <li>
             <label for="actor">Actor:</label>
             <input type="text" name="actor" id="actor" formControlName="actor">
+            <div *ngIf="form && form.get('actor')?.hasError('pattern')" class="error">
+                Only letters allowed.
+            </div>
         </li>
         <li>
             <label for="genre">Genre:</label>
@@ -22,10 +28,16 @@
         <li>
             <label for="rating">Rating:</label>
             <input type="number" name="rating" id="rating" formControlName="rating">
+            <div *ngIf="form && form.get('rating')?.errors as ratingErrors" class="error">
+                Must be between {{ ratingErrors['rating'].min }} and {{ ratingErrors['rating'].max }}.
+            </div>
         </li>
         <li>
             <label for="runtime">Runtime:</label>
-            <input type="number" id="runtime" formControlName="runtime">
+            <input type="number" name="runtime" id="runtime" formControlName="runtime">
+            <div *ngIf="form && form.get('runtime')?.errors as runtimeErrors" class="error">
+                Must be between {{ runtimeErrors['runtime'].min }} and {{ runtimeErrors['runtime'].max }} minutes.
+            </div>
         </li>
     </ul>
     <button type="sumbit" [disabled]="!form.valid">Submit</button>
