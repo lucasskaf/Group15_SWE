@@ -28,5 +28,5 @@
             <input type="number" id="runtime" formControlName="runtime">
         </li>
     </ul>
-    <button type="sumbit">Submit</button>
+    <button type="sumbit" [disabled]="!form.valid">Submit</button>
 </form>
