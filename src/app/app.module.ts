@@ -8,12 +8,16 @@ import { MovieGeneratorComponent } from './movie-generator/movie-generator.compo
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NavBarComponent } from './nav-bar/nav-bar.component';
 import { UserAuthModule } from './user-auth/user-auth.module';
+import { HomePageComponent } from './home-page/home-page.component';
+import { MatIconModule } from '@angular/material/icon'
+import { Routes } from '@angular/router';
 
 @NgModule({
   declarations: [
     AppComponent,
     NavBarComponent,
     MovieGeneratorComponent,
+    HomePageComponent
   ],
   imports: [
     BrowserModule,
@@ -21,7 +25,8 @@ import { UserAuthModule } from './user-auth/user-auth.module';
     AppRoutingModule,
     UserAuthModule,
     ProfilePageModule,
-    BrowserAnimationsModule
+    BrowserAnimationsModule,
+    MatIconModule,
   ],
   providers: [],
   bootstrap: [AppComponent]
