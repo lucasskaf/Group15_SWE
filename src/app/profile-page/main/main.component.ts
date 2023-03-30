@@ -9,7 +9,7 @@ export class MainComponent {
   isSidenavOpen: boolean = false;
 
   public toggleSidenavStatus(event: boolean): void {
-    this.isSidenavOpen = event
+    this.isSidenavOpen = event;
+    console.log("sidenavStatus: " + this.isSidenavOpen);
   }
-  
 }
