@@ -12,7 +12,7 @@ import { ReactiveFormsModule } from '@angular/forms';
   imports: [
     CommonModule,
     MatIconModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
   ],
   exports: [
     LoginRegisterComponent

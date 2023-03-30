@@ -4,14 +4,20 @@ import { HttpClientModule } from '@angular/common/http';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ProfilePageModule } from './profile-page/profile-page.module';
-import { UserAuthModule } from './user-auth/user-auth.module';
+import { MovieGeneratorComponent } from './movie-generator/movie-generator.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NavBarComponent } from './nav-bar/nav-bar.component';
+import { UserAuthModule } from './user-auth/user-auth.module';
+import { HomePageComponent } from './home-page/home-page.component';
+import { MatIconModule } from '@angular/material/icon'
+import { Routes } from '@angular/router';
 
 @NgModule({
   declarations: [
     AppComponent,
-    NavBarComponent
+    NavBarComponent,
+    MovieGeneratorComponent,
+    HomePageComponent
   ],
   imports: [
     BrowserModule,
@@ -19,7 +25,8 @@ import { NavBarComponent } from './nav-bar/nav-bar.component';
     AppRoutingModule,
     UserAuthModule,
     ProfilePageModule,
-    BrowserAnimationsModule
+    BrowserAnimationsModule,
+    MatIconModule,
   ],
   providers: [],
   bootstrap: [AppComponent]
