@@ -35,6 +35,7 @@ Back-End:
  5. Similar movie feature with random IDs
  6. Post creation
  7. Post deletion
+ 8. Editing posts
 
 # API Documentation
 
