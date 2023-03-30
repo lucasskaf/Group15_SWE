@@ -1,5 +1,5 @@
-<mat-sidenav-container *ngIf="isOpen">
-    <mat-sidenav opened mode="side">
+<mat-drawer-container opened class="sidenav">
+    <mat-drawer [opened]="isOpen">
         <div class="sidenav-style">
             <div class="profile-image">
                 <img src="/assets/profile.jfif" alt="">
@@ -15,15 +15,15 @@
                 <a mat-list-item>Logout</a>
             </mat-nav-list>
         </div>
-    </mat-sidenav>
-
-    <mat-sidenav-content>
-        <div style="height: 91.7vh;"></div>
+    </mat-drawer>
+    <mat-drawer-content>
         <div class="watched-section">
-            <app-watched></app-watched>
+            <app-watched (openMovieAddPopup)="toggleAddMoviePopupStatus($event)" [addMoviePopupStatus]="isAddMoviePopupOpen"></app-watched>
+            <app-add-popup-movie [isOpen]="isAddMoviePopupOpen" (isClosed)="toggleAddMoviePopupStatus($event)"></app-add-popup-movie>
         </div>
         <div class="posts-section">
-            <app-posts></app-posts>
+            <app-posts (openPostAddPopup)="toggleAddPostPopupStatus($event)" [addPostPopupStatus]="isAddPostPopupOpen"></app-posts>
+            <app-add-popop-post [isOpen]="isAddPostPopupOpen" (isClosed)="toggleAddPostPopupStatus($event)"></app-add-popop-post>
         </div>
-    </mat-sidenav-content>
-</mat-sidenav-container>
+    </mat-drawer-content>
+</mat-drawer-container>

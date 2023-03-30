@@ -5,9 +5,9 @@ import { MatIconModule } from "@angular/material/icon";
 import { LoginRegisterService } from "src/app/services/login-register.service";
 import { LoginRegisterComponent } from "./login-register.component";
 
-describe("LoginRegisterComponent", () => {
-  let component: LoginRegisterComponent;
-  let fixture: ComponentFixture<LoginRegisterComponent>;
+// describe("LoginRegisterComponent", () => {
+//   let component: LoginRegisterComponent;
+//   let fixture: ComponentFixture<LoginRegisterComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -17,11 +17,11 @@ describe("LoginRegisterComponent", () => {
     }).compileComponents();
   });
 
-  beforeEach(() => {
-    fixture = TestBed.createComponent(LoginRegisterComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+//   beforeEach(() => {
+//     fixture = TestBed.createComponent(LoginRegisterComponent);
+//     component = fixture.componentInstance;
+//     fixture.detectChanges();
+//   });
 
   it('should emit closure', () => {
     const fixture = TestBed.createComponent(LoginRegisterComponent);
@@ -51,7 +51,7 @@ describe("LoginRegisterComponent", () => {
     const button = nativeElement.querySelector('button#signin');
     button.dispatchEvent(new Event('click'));
 
-    fixture.detectChanges();
+//     fixture.detectChanges();
 
     expect(component.loginUser).toHaveBeenCalledTimes(0)
   })

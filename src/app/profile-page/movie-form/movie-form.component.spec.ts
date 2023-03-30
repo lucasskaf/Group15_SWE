@@ -1,18 +1,18 @@
 // import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-// import { PostsComponent } from './posts.component';
+// import { MovieFormComponent } from './movie-form.component';
 
-// describe('PostsComponent', () => {
-//   let component: PostsComponent;
-//   let fixture: ComponentFixture<PostsComponent>;
+// describe('MovieFormComponent', () => {
+//   let component: MovieFormComponent;
+//   let fixture: ComponentFixture<MovieFormComponent>;
 
 //   beforeEach(async () => {
 //     await TestBed.configureTestingModule({
-//       declarations: [ PostsComponent ]
+//       declarations: [ MovieFormComponent ]
 //     })
 //     .compileComponents();
 
-//     fixture = TestBed.createComponent(PostsComponent);
+//     fixture = TestBed.createComponent(MovieFormComponent);
 //     component = fixture.componentInstance;
 //     fixture.detectChanges();
 //   });
