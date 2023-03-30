@@ -283,40 +283,6 @@ func updateUserInfo(context *gin.Context) {
 	}
 }
 
-func getUserInfo(context *gin.Context) {
-	header := context.GetHeader("Authorization")
-	headerToken := strings.ReplaceAll(header, "Bearer ", "")
-	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
-		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
-		}
-		return []byte("sayhellotomylittlefriend"), nil
-	})
-
-	claims, _ := userToken.Claims.(jwt.MapClaims)
-	username := claims["username"].(string)
-	client := connectToDB()
-
-	database := client.Database("UserInfo").Collection("UserInfo")
-	filter := bson.D{{"username", username}}
-	var user User
-	err = database.FindOne(context, filter).Decode(&user)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			// prints debug message and sends back empty JSON struct if password is wrong
-			fmt.Println("username is invalid")
-			var emptyStruct User
-			context.IndentedJSON(http.StatusOK, emptyStruct)
-			return
-		}
-		panic(err)
-	}
-	//obscures sensitive data
-	user.Password = ""
-	user.Email = ""
-	context.IndentedJSON(http.StatusOK, user)
-}
-
 /*
 	Credit for movie API goes to The Movie DB (TMDB)
 
