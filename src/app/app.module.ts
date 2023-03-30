@@ -9,7 +9,6 @@ import { NavBarComponent } from './nav-bar/nav-bar.component';
 import { UserAuthModule } from './user-auth/user-auth.module';
 import { HomePageComponent } from './home-page/home-page.component';
 import { MatIconModule } from '@angular/material/icon'
-import { Routes } from '@angular/router';
 import { routing } from './app-routing.module';
 
 @NgModule({
