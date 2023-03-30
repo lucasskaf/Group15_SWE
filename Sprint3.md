@@ -9,6 +9,8 @@ able to successfully add movie objects and post objects, which we will then pass
 upcoming sprint, we plan on fully incorporating the back-end with the profile section and using the retrieved information to fill out the necessary
 user information in the profile section. Additionally, we plan on adding the remove functionality to the respective sections of the profile page.
 
+Video link: https://youtu.be/fGRTOwWzgdM
+
 # Unit Tests (raw code found on GitHub)
 
 Home Page - testing login and logout, testing registration, testing navigation bar interaction, testing login/register component
