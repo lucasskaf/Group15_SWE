@@ -80,10 +80,11 @@ type ForumComment struct {
 
 // this is the post struct that contains all the different fields for a certain post
 type Post struct {
-	PostID primitive.ObjectID `json:"id"`
-	Title  string             `json:"title"`
-	Body   string             `json:"body"`
-	Date   string             `json:"date"`
+	PostID   primitive.ObjectID `json:"id"`
+	Username string             `json:"username"`
+	Title    string             `json:"title"`
+	Body     string             `json:"body"`
+	Date     string             `json:"date"`
 }
 
 // this function connects the server/client to mongodb database whenever it is called
@@ -151,7 +152,7 @@ func login(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"token": token})
 
-	context.IndentedJSON(http.StatusOK, retrieved)
+	// context.IndentedJSON(http.StatusOK, retrieved)
 	fmt.Printf("login successful!")
 	client.Disconnect(context)
 }
@@ -282,6 +283,40 @@ func updateUserInfo(context *gin.Context) {
 	}
 }
 
+func getUserInfo(context *gin.Context) {
+	header := context.GetHeader("Authorization")
+	headerToken := strings.ReplaceAll(header, "Bearer ", "")
+	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
+		}
+		return []byte("sayhellotomylittlefriend"), nil
+	})
+
+	claims, _ := userToken.Claims.(jwt.MapClaims)
+	username := claims["username"].(string)
+	client := connectToDB()
+
+	database := client.Database("UserInfo").Collection("UserInfo")
+	filter := bson.D{{"username", username}}
+	var user User
+	err = database.FindOne(context, filter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// prints debug message and sends back empty JSON struct if password is wrong
+			fmt.Println("username is invalid")
+			var emptyStruct User
+			context.IndentedJSON(http.StatusOK, emptyStruct)
+			return
+		}
+		panic(err)
+	}
+	//obscures sensitive data
+	user.Password = ""
+	user.Email = ""
+	context.IndentedJSON(http.StatusOK, user)
+}
+
 /*
 	Credit for movie API goes to The Movie DB (TMDB)
 
@@ -390,9 +425,10 @@ func createPost(context *gin.Context) {
 	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
 	result, err := postDatabase.InsertOne(context, bson.M{
-		"title": newPost.Title,
-		"body":  newPost.Body,
-		"date":  date,
+		"username": username,
+		"title":    newPost.Title,
+		"body":     newPost.Body,
+		"date":     date,
 	})
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
@@ -401,6 +437,7 @@ func createPost(context *gin.Context) {
 
 	newPost.PostID = result.InsertedID.(primitive.ObjectID)
 	newPost.Date = date
+	newPost.Username = username
 
 	userDatabase := client.Database("UserInfo").Collection("UserInfo")
 	filter := bson.M{"username": username}
@@ -411,7 +448,7 @@ func createPost(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusCreated, newPost)
-	fmt.Println("Post successfuly created")
+	// fmt.Println("Post successfuly created")
 	client.Disconnect(context)
 }
 
@@ -474,6 +511,94 @@ func deletePost(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Post deleted successfuly"})
+	client.Disconnect(context)
+}
+
+// this function updates an already-existing post for the logged in user
+func updatePost(context *gin.Context) {
+	header := context.GetHeader("Authorization") // gets "Bearer token"
+	if header == "" {                            // checks if the authorization header is empty or not and throws error if it is
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+		return
+	}
+	headerToken := strings.ReplaceAll(header, "Bearer ", "") // gets the token only, which is everything after "Bearer"
+	// Now we parse through the token and check that it is valid, if not, then error
+	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
+		}
+		return []byte("sayhellotomylittlefriend"), nil
+	})
+	if err != nil || !userToken.Valid {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+		return
+	}
+
+	postID := context.Param("postID")
+	objectID, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "This is an invalid post ID"})
+		return
+	}
+
+	claims, _ := userToken.Claims.(jwt.MapClaims)
+	username := claims["username"].(string)
+	client := connectToDB()
+
+	// Need to get the post that needs to be update
+	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
+	filter := bson.M{"_id": objectID}
+	var currentPost Post
+	err = postDatabase.FindOne(context, filter).Decode(&currentPost)
+	if err != nil { // post does not exist
+		context.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+	}
+	// Check if the logged in user created post that is trying to be updated
+	if currentPost.Username != username {
+		context.JSON(http.StatusForbidden, gin.H{"error": "You cannot update a post that is not yours"})
+		return
+	}
+
+	// Update the current post with whatever logged in user wants
+	var updatedPost Post
+	if err := context.BindJSON(&updatedPost); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Failed to the parse updated post from request body"})
+		return
+	}
+
+	updatedPost.Date = time.Now().Format("January 2, 2006")
+	updateMade := bson.M {
+		"$set": bson.M {
+			"title": updatedPost.Title,
+			"body":  updatedPost.Body,
+			"date":  updatedPost.Date,
+		},
+	}
+
+	_, err = postDatabase.UpdateOne(context, filter, updateMade)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post"})
+		return
+	}
+
+
+
+	userDatabase := client.Database("UserInfo").Collection("UserInfo")
+	updateUserPosts := bson.M {
+		"$set": bson.M {
+			"posts.$.title": updatedPost.Title,
+			"posts.$.body": updatedPost.Body,
+		},
+	}
+	updateFilter := bson.M{"username": username, "posts.postid": objectID}
+
+	_, err = userDatabase.UpdateOne(context, updateFilter, updateUserPosts)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post in user array"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Post updated successfully"})
 	client.Disconnect(context)
 }
 
@@ -540,6 +665,7 @@ func main() {
 	router.POST("/:username/add", addToWatchlist)
 	router.POST("/posts", createPost)
 	router.DELETE("/posts/:postID", deletePost)
+	router.PUT("/posts/:postID", updatePost)
 	router.PUT("/:username/update", updateUserInfo)
 	router.DELETE("/:username/delete", removeUser)
 	router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
