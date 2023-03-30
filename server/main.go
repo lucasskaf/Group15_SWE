@@ -28,6 +28,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/gin-contrib/cors"
 )
 
 // this is the movie struct that contains all the different fields for a movie
@@ -149,11 +151,32 @@ func login(context *gin.Context) {
 		panic(err)
 	}
 
-	context.JSON(http.StatusOK, gin.H{"token": token})
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Expires:  time.Now().Add(time.Hour * 24),
+		HttpOnly: true,
+	}
+	http.SetCookie(context.Writer, cookie)
 
-	context.IndentedJSON(http.StatusOK, retrieved)
+	// context.JSON(http.StatusOK, gin.H{"token": token, "user_data": retrieved})
+	context.JSON(http.StatusOK, gin.H{"message": cookie})
+
 	fmt.Printf("login successful!")
-	client.Disconnect(context)
+	// client.Disconnect(context)
+}
+
+func logout(context *gin.Context) {
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		HttpOnly: true,
+	}
+
+	http.SetCookie(context.Writer, cookie)
+
+	context.JSON(http.StatusOK, gin.H{"message": cookie})
 }
 
 // this function creates a brand new user and inserts it into the database
@@ -514,6 +537,40 @@ func scanValidIDs() {
 	fmt.Println("Smallest: " + fmt.Sprint(smallest))
 }
 
+func getUserInfo(context *gin.Context) {
+	cookie, _ := context.Cookie("token")
+	headerToken := strings.ReplaceAll(cookie, "Bearer ", "")
+	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
+		}
+		return []byte("sayhellotomylittlefriend"), nil
+	})
+
+	claims, _ := userToken.Claims.(jwt.MapClaims)
+	username := claims["username"].(string)
+	client := connectToDB()
+
+	database := client.Database("UserInfo").Collection("UserInfo")
+	filter := bson.D{{"username", username}}
+	var user User
+	err = database.FindOne(context, filter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// prints debug message and sends back empty JSON struct if password is wrong
+			fmt.Println("username is invalid")
+			var emptyStruct User
+			context.IndentedJSON(http.StatusOK, emptyStruct)
+			return
+		}
+		panic(err)
+	}
+	//obscures sensitive data
+	user.Password = ""
+	user.Email = ""
+	context.IndentedJSON(http.StatusOK, user)
+}
+
 func CORSMiddleware() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		context.Header("Access-Control-Allow-Origin", "*")
@@ -533,9 +590,20 @@ func main() {
 	//Sets up routing
 
 	router := gin.Default()
-	router.Use(CORSMiddleware())
+	router.Use(
+		cors.New(
+			cors.Config{
+				AllowOrigins:     []string{"http://localhost:4200", "http://localhost:4200/user"},
+				AllowMethods:     []string{"GET", "POST", "DELETE", "PUT"},
+				AllowHeaders:     []string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "accept", "origin", "Cache-Control"},
+				AllowCredentials: true,
+			},
+		),
+	)
 	router.POST("/login", login)
 	router.GET("/generate", randomMovie)
+	router.GET("/user", getUserInfo)
+	router.POST("/logout", logout)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
 	router.POST("/posts", createPost)
