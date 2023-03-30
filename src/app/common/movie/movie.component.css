@@ -1,0 +1,45 @@
+.movie {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    background-color: #B0DBF1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #02055A;
+}
+
+.movie h2 {
+    font-size: 24px;
+    margin-top: 0;
+}
+
+.actor-section {
+    margin-top: 5px;
+    font-size: 16px;
+}
+
+.genre-section {
+    margin-top: 5px;
+    font-size: 16px;
+}
+
+.rating-section {
+    margin-top: 5px;
+    font-size: 16px;
+}
+
+.runtime-section {
+    margin-top: 5px;
+    font-size: 16px;
+}
+
+.movie .delete-btn {
+    background-color: red;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}

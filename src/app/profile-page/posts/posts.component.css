@@ -1,14 +1,42 @@
 .posts-container {
-    background-color: lightgrey;
+  background-color: lightgrey;
   border-radius: 10px;
-  width: 1200px; 
-  height: 350px; 
-  padding: 20px;
+  width: 90%;
+  height: 20%;
+  padding: 1%;
 
   position: absolute;
-  top: 50%;
-  right: 0;
+  top: 70%;
+  right: 5%;
   bottom: 0;
   left: 20%;
-  margin-left: -200px;
+  margin-left: -15.5%;
+
+  overflow: hidden;
+  overflow-y: scroll;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.post-container {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  gap: 10px;
+  margin-top: 60px;
+}
+
+.title {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+}
+
+.add-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin-top: 10px;
+  margin-right: 10px;
 }
