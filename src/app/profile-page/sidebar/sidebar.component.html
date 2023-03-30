@@ -1,0 +1,29 @@
+<mat-drawer-container opened class="sidenav">
+    <mat-drawer [opened]="isOpen">
+        <div class="sidenav-style">
+            <div class="profile-image">
+                <img src="/assets/profile.jfif" alt="">
+            </div>  
+        </div>
+
+        <div class="sidenav-divs">
+            <mat-nav-list>
+                <div class="username">
+                    <b>Ernesto Roja</b>
+                </div>
+                <a mat-list-item>Settings</a>
+                <a mat-list-item>Logout</a>
+            </mat-nav-list>
+        </div>
+    </mat-drawer>
+    <mat-drawer-content>
+        <div class="watched-section">
+            <app-watched (openMovieAddPopup)="toggleAddMoviePopupStatus($event)" [addMoviePopupStatus]="isAddMoviePopupOpen"></app-watched>
+            <app-add-popup-movie [isOpen]="isAddMoviePopupOpen" (isClosed)="toggleAddMoviePopupStatus($event)"></app-add-popup-movie>
+        </div>
+        <div class="posts-section">
+            <app-posts (openPostAddPopup)="toggleAddPostPopupStatus($event)" [addPostPopupStatus]="isAddPostPopupOpen"></app-posts>
+            <app-add-popop-post [isOpen]="isAddPostPopupOpen" (isClosed)="toggleAddPostPopupStatus($event)"></app-add-popop-post>
+        </div>
+    </mat-drawer-content>
+</mat-drawer-container>

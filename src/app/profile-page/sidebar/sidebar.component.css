@@ -1,0 +1,40 @@
+mat-drawer {
+    width: 20%;
+    min-width: 250px;
+}
+
+
+.profile-image {
+    margin-top: 20px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid black;
+}
+
+.profile-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+}
+
+.sidenav-style {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.sidenav-divs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.username {
+    font-size: 30px;
+}
+
+.sidenav {
+    height: 91.7%;
+}

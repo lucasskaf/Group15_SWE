@@ -1,0 +1,10 @@
+.post {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    background-color: #B0DBF1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #02055A;
+}
