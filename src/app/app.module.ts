@@ -3,12 +3,11 @@ import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { MatIconModule } from '@angular/material/icon'
-import {MatButtonModule} from '@angular/material/button';
+import { ProfilePageModule } from './profile-page/profile-page.module';
+import { MovieGeneratorComponent } from './movie-generator/movie-generator.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NavBarComponent } from './nav-bar/nav-bar.component';
 import { UserAuthModule } from './user-auth/user-auth.module';
-import { MovieGeneratorComponent } from './movie-generator/movie-generator.component';
-
 
 @NgModule({
   declarations: [
@@ -20,9 +19,9 @@ import { MovieGeneratorComponent } from './movie-generator/movie-generator.compo
     BrowserModule,
     HttpClientModule,
     AppRoutingModule,
-    MatIconModule,
-    MatButtonModule,
-    UserAuthModule
+    UserAuthModule,
+    ProfilePageModule,
+    BrowserAnimationsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

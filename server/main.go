@@ -97,10 +97,7 @@ func connectToDB() (client *mongo.Client) {
 	}
 	//online cluster mongodb+srv://test:1234@cluster0.aruhgq1.mongodb.net/?retryWrites=true&w=majority
 	//local cluster URL mongodb://localhost:27017/
-  
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://test:1234@cluster0.aruhgq1.mongodb.net/?retryWrites=true&w=majority"))
-	// client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
-
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
 	}
@@ -166,6 +163,7 @@ func createUser(context *gin.Context) {
 	var newUser User
 	if err := context.BindJSON(&newUser); err != nil {
 		fmt.Printf("JSON bind failed!")
+		context.JSON(http.StatusAlreadyReported, gin.H{"error": "u r an idiot"})
 		return //catches null requests and throws error.
 	}
 	//throws error if username or password are blank
@@ -184,7 +182,7 @@ func createUser(context *gin.Context) {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Username is taken"})
 		return
 	}
-
+	newUser.Posts = []Post{}
 	database.InsertOne(context, newUser)
 	client.Disconnect(context)
 }
@@ -520,14 +518,13 @@ func CORSMiddleware() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		context.Header("Access-Control-Allow-Origin", "*")
 		context.Header("Access-Control-Allow-Credentials", "true")
-		context.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		context.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control")
 		context.Header("Access-Control-Allow-Methods", "POST, HEAD, PATCH, OPTIONS, GET, PUT")
 
 		if context.Request.Method == "OPTIONS" {
 			context.AbortWithStatus(204)
 			return
 		}
-    
 		context.Next()
 	}
 }

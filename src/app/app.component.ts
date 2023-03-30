@@ -11,7 +11,7 @@ export class AppComponent {
   title = 'BingeBuddy';
   isLoginOpen = false
 
-  toogleLoginStatus(loginStatus : boolean) {
+  public toogleLoginStatus(loginStatus : boolean): void{
     this.isLoginOpen = loginStatus;
   }
 }
