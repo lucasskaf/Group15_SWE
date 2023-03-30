@@ -11,19 +11,19 @@
     <div class="form-container sign-up-container">
       <form [formGroup]="formSignUp" (ngSubmit)="onSubmit(formSignUp.value)" action="#">
         <h1>Create Account</h1>
-        <input type="text" placeholder="Name" formControlName="username" />
+        <input type="text" placeholder="Name" formControlName="username" required/>
         <!-- <input type="email" placeholder="Email" /> -->
-        <input type="password" placeholder="Password" formControlName="password"/>
+        <input type="password" placeholder="Password" formControlName="password" required/>
         <button type="submit">Sign Up</button>
       </form>
     </div>
     <div class="form-container sign-in-container">
-      <form action="#">
+      <form [formGroup]="formSignIn" (ngSubmit)="loginUser(formSignIn.value)" action="#">
         <h2><span id="welcome">Welcome to </span> <br> <span id="binge">Binge </span><span id="buddy">Buddy</span></h2>
-        <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
+        <input type="email" placeholder="Email" formControlName="username"/>
+        <input type="password" placeholder="Password" formControlName="password"/>
         <!-- <a href="#">Forgot your password?</a> -->
-        <button>Sign In</button>
+        <button id="signin" type="submit">Sign In</button>
       </form>
     </div>
     <div class="overlay-container">

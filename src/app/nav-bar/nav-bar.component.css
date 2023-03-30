@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css?family=Montserrat:400,800');
+
+* {
+    font-family: 'Montserrat', sans-serif;
+}
+
 h2 {
     width: 50px;
     margin: 0;
@@ -12,6 +18,17 @@ h2 {
 
 h2 span {
     font-weight: bold;
+}
+
+p {
+    display: inline;
+    color: #FFF;
+    font-size: 18px;
+    margin-right: 45px;
+}
+
+p span {
+    font-weight: 600;
 }
 
 .nav-bar {
