@@ -1,7 +1,6 @@
 import { Component, EventEmitter, OnInit, Output, Input } from '@angular/core';
 import { MovieService } from '../../services/movie-service';
 import { MovieComponent } from '../../common/movie/movie.component';
-import { AddPopupComponent } from '../add-popup/add-popup.component';
 
 @Component({
   selector: 'app-watched',
@@ -9,8 +8,8 @@ import { AddPopupComponent } from '../add-popup/add-popup.component';
   styleUrls: ['./watched.component.css']
 })
 export class WatchedComponent implements OnInit {
-  @Output() openAddPopup = new EventEmitter<boolean>();
-  @Input() addPopupStatus: boolean = false;
+  @Output() openMovieAddPopup = new EventEmitter<boolean>();
+  @Input() addMoviePopupStatus: boolean = false;
   
   movies: MovieComponent[] = [];
 
@@ -24,8 +23,8 @@ export class WatchedComponent implements OnInit {
     this.movieService.deleteWatchedMovie(movie);
   }
 
-  public onAddClick(): void {
-    this.openAddPopup.emit(!this.addPopupStatus);
-    this.addPopupStatus = !this.addPopupStatus;
+  public onMovieAddClick(): void {
+    this.openMovieAddPopup.emit(!this.addMoviePopupStatus);
+    this.addMoviePopupStatus = !this.addMoviePopupStatus;
   }
 }

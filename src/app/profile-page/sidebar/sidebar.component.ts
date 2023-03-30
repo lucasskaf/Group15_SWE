@@ -9,7 +9,8 @@ export class SidebarComponent implements OnInit {
 
   @Output() isClosed = new EventEmitter<boolean>();
   @Input() isOpen : boolean = false;
-  isAddPopupOpen: boolean = false;
+  isAddMoviePopupOpen: boolean = false;
+  isAddPostPopupOpen: boolean = false;
 
   constructor() { }
 
@@ -22,7 +23,11 @@ export class SidebarComponent implements OnInit {
     this.isClosed.emit(this.isOpen);
   }
 
-  public toggleAddPopupStatus(event: boolean): void {
-    this.isAddPopupOpen = event;
+  public toggleAddMoviePopupStatus(event: boolean): void {
+    this.isAddMoviePopupOpen = event;
+  }
+
+  public toggleAddPostPopupStatus(event: boolean): void {
+    this.isAddPostPopupOpen = event;
   }
 }

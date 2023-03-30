@@ -13,7 +13,10 @@ import { WatchedComponent } from './watched/watched.component';
 import { PostsComponent } from './posts/posts.component';
 import { MovieFormComponent } from './movie-form/movie-form.component';
 import { MovieComponent } from '../common/movie/movie.component';
-import { AddPopupComponent } from './add-popup/add-popup.component';
+import { AddMoviePopupComponent } from './add-popup-movie/add-popup-movie.component';
+import { PostComponent } from '../common/post/post.component';
+import { AddPopopPostComponent } from './add-popop-post/add-popop-post.component';
+import { PostFormComponent } from './post-form/post-form.component';
 //import { routing } from './profile-page.routing';
 
 @NgModule({
@@ -25,7 +28,10 @@ import { AddPopupComponent } from './add-popup/add-popup.component';
     NavbarComponent,
     MovieFormComponent,
     MovieComponent,
-    AddPopupComponent
+    AddMoviePopupComponent,
+    PostComponent,
+    AddPopopPostComponent,
+    PostFormComponent
   ],
   imports: [
     CommonModule,

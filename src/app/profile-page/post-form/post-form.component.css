@@ -1,0 +1,17 @@
+.post-container {
+    padding: 30px;
+    background-color: #c5a9a9;
+    width: 90%;
+    margin: 0 auto;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.post-content {
+    width: 700px;
+    height: 300px;
+    font-size: 18px;
+    padding: 10px;
+    border: none;
+    outline: none;
+    resize: none;
+}
