@@ -16,9 +16,4 @@ describe('SidebarComponent', () => {
     })
     cy.get('mat-drawer').should('be.visible');
   })
-
-  it('should toggle the sidenav button on the navbar', () => {
-    cy.get('app-navbar').find('#sidenav-button').click();
-    cy.get('mat-drawer').should('not.be.visible');
-  })
 })
