@@ -1,4 +1,3 @@
-// import { HttpClientTestingModule } from "@angular/common/http/testing";
 // import { ComponentFixture, TestBed } from "@angular/core/testing";
 // import { ReactiveFormsModule } from "@angular/forms";
 // import { MatIconModule } from "@angular/material/icon";
@@ -37,22 +36,6 @@
 
 //     fixture.detectChanges();
 
-//     expect(spy).toHaveBeenCalledWith(false);
-//   })
-
-//   it('should call loginUser', () => {
-//     const fixture = TestBed.createComponent(LoginRegisterComponent);
-//     // spy on event emitter
-//     const component = fixture.componentInstance; 
-//     spyOn(component, 'loginUser');
-
-//     // trigger the click
-//     const nativeElement = fixture.nativeElement;
-//     const button = nativeElement.querySelector('button#signin');
-//     button.dispatchEvent(new Event('click'));
-
-// //     fixture.detectChanges();
-
-//     expect(component.loginUser).toHaveBeenCalledTimes(0)
+//     expect(component.isClosed.emit).toHaveBeenCalledWith(true);
 //   })
 // })
