@@ -24,6 +24,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/joho/godotenv"
+	"github.com/microcosm-cc/bluemonday"
 	"go.mongodb.org/mongo-driver/bson"
 
 	//"go.mongodb.org/mongo-driver/bson/primitive"
@@ -165,7 +166,8 @@ func login(context *gin.Context) {
 	if err := context.BindJSON(&credentials); err != nil {
 		fmt.Printf("Json binding failed")
 	}
-
+	//sanitizes user profile before searching database
+	sanitizeUser(&credentials)
 	filter := bson.D{{"username", credentials.Username}, {"password", credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
@@ -203,6 +205,7 @@ func createUser(context *gin.Context) {
 		context.JSON(http.StatusAlreadyReported, gin.H{"error": "u r an idiot"})
 		return //catches null requests and throws error.
 	}
+	sanitizeUser(&newUser)
 	//throws error if username or password are blank
 	if newUser.Username == "" || newUser.Password == "" {
 		var emptyStruct User
@@ -223,6 +226,36 @@ func createUser(context *gin.Context) {
 	database.InsertOne(context, newUser)
 	context.IndentedJSON(http.StatusOK, newUser)
 	client.Disconnect(context)
+}
+
+func sanitizeUser(user *User) {
+	//this policy strips all HTML tags from every part of the user class to prevent XSS attacks
+	p := bluemonday.StrictPolicy()
+	user.Email = p.Sanitize(user.Email)
+	user.Username = p.Sanitize(user.Username)
+	user.Password = p.Sanitize(user.Password)
+	for i, g := range user.Genres {
+		user.Genres[i] = p.Sanitize(g)
+	}
+	for _, m := range user.Watchlist {
+		sanitizeMovieFields(&m, p)
+	}
+	for i, s := range user.Subscriptions {
+		user.Subscriptions[i] = p.Sanitize(s)
+	}
+
+}
+
+// sanitizes the fields that the user is likely to know and input
+func sanitizeMovieFields(movie *Movie, policy *bluemonday.Policy) {
+	//policy can be passed in for greater efficiency, but function can still operate independently
+	if policy == nil {
+		policy = bluemonday.StrictPolicy()
+	}
+	movie.Title = policy.Sanitize(movie.Title)
+	for i, g := range movie.Genres {
+		movie.Genres[i] = policy.Sanitize(g)
+	}
 }
 
 func addToWatchlist(context *gin.Context) {
@@ -255,6 +288,7 @@ func addToWatchlist(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
 	}
+	sanitizeMovieFields(&movie, nil)
 	filter := bson.D{{"username", username}}
 	var updatedUser User
 	database.FindOne(context, filter).Decode(&updatedUser)
@@ -514,7 +548,7 @@ func createPost(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return
 	}
-
+	sanitizePost(&newPost)
 	date := time.Now().Format("January 2, 2006")
 	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
@@ -544,6 +578,15 @@ func createPost(context *gin.Context) {
 	context.JSON(http.StatusCreated, newPost)
 	// fmt.Println("Post successfuly created")
 	client.Disconnect(context)
+}
+
+func sanitizePost(post *Post) {
+	policy := bluemonday.NewPolicy()
+	policy.AllowStandardURLs()
+	policy.AllowRelativeURLs(true)
+	policy.AllowImages()
+	post.Title = policy.Sanitize(post.Title)
+	post.Body = policy.Sanitize(post.Body)
 }
 
 // this function deletes a post for the logged in user
@@ -659,7 +702,7 @@ func updatePost(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Failed to the parse updated post from request body"})
 		return
 	}
-
+	sanitizePost(&updatedPost)
 	updatedPost.Date = time.Now().Format("January 2, 2006")
 	updateMade := bson.M{
 		"$set": bson.M{
@@ -872,7 +915,6 @@ func main() {
 	os.Setenv("GIN_MODE", "release")
 	gin.SetMode(gin.ReleaseMode)
 	//Sets up routing
-
 	router := gin.Default()
 	router.Use(CORSMiddleware())
 	router.GET("/login", login)
