@@ -156,7 +156,7 @@ func TestLogin(t *testing.T) {
 // tests formula used to generate random IDs
 // timeout override command: go test -timeout 10m -run ^TestGenerateRandomNumber$ bingebuddy.com/m
 func TestGenerateRandomNumber(t *testing.T) {
-	smallest := 7.0
+	smallest := 1.0
 	largest := 17.0
 	output := 0
 	for output != int(smallest) {
