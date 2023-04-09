@@ -24,6 +24,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/joho/godotenv"
+	"github.com/microcosm-cc/bluemonday"
 	"go.mongodb.org/mongo-driver/bson"
 
 	//"go.mongodb.org/mongo-driver/bson/primitive"
@@ -58,8 +59,9 @@ type Movie struct {
 	Status              string   `json:"status,omitempty" validate:"oneof=rumored planned in_production post_production released canceled"` // The movie's production status.
 	Tagline             string   `json:"tagline,omitempty"`                                                                                 // The movie's tagline.
 	Title               string   `json:"title,omitempty"`                                                                                   // The movie's title.
-	VoteAverage         float64  `json:"vote_average,omitempty"`                                                                            // The average rating given to the movie by users.
+	VoteAverage         float64  `json:"vote_average"`                                                                                      // The average rating given to the movie by users.
 	VoteCount           int      `json:"vote_count,omitempty"`                                                                              // The number of user ratings given to the movie.
+	UserRating          float32  `json:"user_rating,omitempty"`
 }
 
 type results struct {
@@ -165,7 +167,8 @@ func login(context *gin.Context) {
 	if err := context.BindJSON(&credentials); err != nil {
 		fmt.Printf("Json binding failed")
 	}
-
+	//sanitizes user profile before searching database
+	sanitizeUser(&credentials)
 	filter := bson.D{{"username", credentials.Username}, {"password", credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
@@ -203,10 +206,11 @@ func createUser(context *gin.Context) {
 		context.JSON(http.StatusAlreadyReported, gin.H{"error": "u r an idiot"})
 		return //catches null requests and throws error.
 	}
+
+	valid, errString := validateUser(&newUser)
 	//throws error if username or password are blank
-	if newUser.Username == "" || newUser.Password == "" {
-		var emptyStruct User
-		context.IndentedJSON(http.StatusBadRequest, emptyStruct)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errString})
 		client.Disconnect(context)
 		return
 	}
@@ -223,6 +227,60 @@ func createUser(context *gin.Context) {
 	database.InsertOne(context, newUser)
 	context.IndentedJSON(http.StatusOK, newUser)
 	client.Disconnect(context)
+}
+
+// checks if user meets certain conditions for account creation (put multiple return types in parentheses separated by commas)
+func validateUser(user *User) (bool, string) {
+	sanitizeUser(user)
+	error := ""
+	isValid := true
+	if user.Username == "" && user.Password == "" {
+		isValid = false
+		error = "username or password cannot be blank"
+		return isValid, error
+	}
+	userLen := len(user.Username)
+	passLen := len(user.Password)
+	if userLen < 4 || passLen < 4 {
+		error = "username and password must be at least 4 characters"
+		return isValid, error
+	}
+	if userLen > 50 || passLen > 50 {
+		isValid = false
+		error = "username or password must be less than 50 characters"
+		return isValid, error
+	}
+	return isValid, error
+}
+
+func sanitizeUser(user *User) {
+	//this policy strips all HTML tags from every part of the user class to prevent XSS attacks
+	p := bluemonday.StrictPolicy()
+	user.Email = p.Sanitize(user.Email)
+	user.Username = p.Sanitize(user.Username)
+	user.Password = p.Sanitize(user.Password)
+	for i, g := range user.Genres {
+		user.Genres[i] = p.Sanitize(g)
+	}
+	for _, m := range user.Watchlist {
+		sanitizeMovieFields(&m, p)
+	}
+	for i, s := range user.Subscriptions {
+		user.Subscriptions[i] = p.Sanitize(s)
+	}
+
+}
+
+// sanitizes the fields that the user is likely to know and input
+func sanitizeMovieFields(movie *Movie, policy *bluemonday.Policy) {
+	//policy can be passed in for greater efficiency, but function can still operate independently
+	if policy == nil {
+		policy = bluemonday.StrictPolicy()
+	}
+	movie.Title = policy.Sanitize(movie.Title)
+	for i, g := range movie.Genres {
+		movie.Genres[i] = policy.Sanitize(g)
+	}
 }
 
 func addToWatchlist(context *gin.Context) {
@@ -254,6 +312,10 @@ func addToWatchlist(context *gin.Context) {
 	if err := context.BindJSON(&movie); err != nil {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
+	}
+	sanitizeMovieFields(&movie, nil)
+	if movie.OriginalTitle == "" {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 	}
 	filter := bson.D{{"username", username}}
 	var updatedUser User
@@ -405,9 +467,43 @@ func updateUserInfo(context *gin.Context) {
 our API key: 010c2ddcdf323db029b6dca4cbfa49de
 As of 2/18/2022, the largest possible movie ID is 1088411, while the smallest possible movie ID is 2
 */
+
 func randomMovie(context *gin.Context) {
-	//rng uses current time as a seed
-	rng := rand.New(rand.NewSource(time.Now().Unix()))
+	appropriate := false
+	executions := 1
+	var randMovie Movie
+	for appropriate == false {
+		url := "https://api.themoviedb.org/3/movie/top_rated?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&page="
+		//should produce a random number from 1 to 1000
+		randPage := generateRandomNumber(1, 70)
+		url = url + fmt.Sprint(randPage)
+		resp, err := http.Get(url)
+		if err != nil {
+			panic(err)
+		}
+		var results results
+		binary, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		json.Unmarshal(binary, &results)
+		pageSize := len(results.Results)
+		executions := 0
+		randIndex := generateRandomNumber(0, float64(pageSize-1))
+		randMovie = results.Results[randIndex]
+		appropriate = filterMovies(&randMovie)
+		executions++
+	}
+	println(executions)
+	//returns an empty struct and an error if function failed to produce a random movie.
+	if randMovie.Title == "" {
+		context.IndentedJSON(http.StatusInternalServerError, randMovie)
+	} else {
+		context.IndentedJSON(http.StatusOK, randMovie)
+	}
+}
+
+func trueRandomMovie(context *gin.Context) {
 	frontHalf := "https://api.themoviedb.org/3/movie/"
 	backHalf := "?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US"
 	var resp *http.Response
@@ -420,7 +516,7 @@ func randomMovie(context *gin.Context) {
 	//first execution must take place outside of loop
 	//If invalid, makes requests until it gets an OK response
 	for !appropriate {
-		id := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
+		id := generateRandomNumber(smallest, largest)
 		requestString := frontHalf + fmt.Sprint(id) + backHalf
 		resp, err = http.Get(requestString)
 		if err != nil {
@@ -447,16 +543,32 @@ func randomMovie(context *gin.Context) {
 	context.JSON(http.StatusOK, movieData)
 }
 
-// function is designed to test RNG formula
 func generateRandomNumber(smallest float64, largest float64) int {
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
-	id := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
-	return id
+	output := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
+	return output
+}
+
+func analyzePopularPages() {
+	for i := 1; i <= 549; i++ {
+		var page results
+		resp, err := http.Get("https://api.themoviedb.org/3/movie/top_rated?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&page=" + fmt.Sprint(i))
+		if err != nil {
+			panic(err)
+		}
+		binary, _ := io.ReadAll(resp.Body)
+		json.Unmarshal(binary, &page)
+		println(len(page.Results))
+	}
 }
 
 func filterMovies(m *Movie) bool {
 	//checks if movie contains adult content
 	if m.Adult {
+		return false
+	}
+	//movie must have a rating above 0
+	if m.VoteAverage == 0 {
 		return false
 	}
 	//checks if movie is in English
@@ -514,7 +626,11 @@ func createPost(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return
 	}
-
+	valid, errorString := validatePost(&newPost)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errorString})
+		return
+	}
 	date := time.Now().Format("January 2, 2006")
 	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
@@ -544,6 +660,31 @@ func createPost(context *gin.Context) {
 	context.JSON(http.StatusCreated, newPost)
 	// fmt.Println("Post successfuly created")
 	client.Disconnect(context)
+}
+
+func sanitizePost(post *Post) {
+	policy := bluemonday.NewPolicy()
+	policy.AllowStandardURLs()
+	policy.AllowRelativeURLs(true)
+	policy.AllowImages()
+	post.Title = policy.Sanitize(post.Title)
+	post.Body = policy.Sanitize(post.Body)
+}
+
+func validatePost(post *Post) (bool, string) {
+	valid := true
+	var error string
+	if post.Body == "" || post.Title == "" {
+		valid = false
+		error = "post title and body cannot be blank"
+		return valid, error
+	}
+	if len(post.Title) > 100 || len(post.Body) > 1000 {
+		valid = false
+		error = "post title or body is too long"
+		return valid, error
+	}
+	return valid, error
 }
 
 // this function deletes a post for the logged in user
@@ -659,7 +800,11 @@ func updatePost(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Failed to the parse updated post from request body"})
 		return
 	}
-
+	valid, errorString := validatePost(&updatedPost)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errorString})
+		return
+	}
 	updatedPost.Date = time.Now().Format("January 2, 2006")
 	updateMade := bson.M{
 		"$set": bson.M{
@@ -872,7 +1017,6 @@ func main() {
 	os.Setenv("GIN_MODE", "release")
 	gin.SetMode(gin.ReleaseMode)
 	//Sets up routing
-
 	router := gin.Default()
 	router.Use(CORSMiddleware())
 	router.GET("/login", login)
