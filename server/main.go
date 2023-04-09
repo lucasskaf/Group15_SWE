@@ -59,7 +59,7 @@ type Movie struct {
 	Status              string   `json:"status,omitempty" validate:"oneof=rumored planned in_production post_production released canceled"` // The movie's production status.
 	Tagline             string   `json:"tagline,omitempty"`                                                                                 // The movie's tagline.
 	Title               string   `json:"title,omitempty"`                                                                                   // The movie's title.
-	VoteAverage         float64  `json:"vote_average,omitempty"`                                                                            // The average rating given to the movie by users.
+	VoteAverage         float64  `json:"vote_average"`                                                                                      // The average rating given to the movie by users.
 	VoteCount           int      `json:"vote_count,omitempty"`                                                                              // The number of user ratings given to the movie.
 }
 
@@ -439,9 +439,42 @@ func updateUserInfo(context *gin.Context) {
 our API key: 010c2ddcdf323db029b6dca4cbfa49de
 As of 2/18/2022, the largest possible movie ID is 1088411, while the smallest possible movie ID is 2
 */
+
 func randomMovie(context *gin.Context) {
-	//rng uses current time as a seed
-	rng := rand.New(rand.NewSource(time.Now().Unix()))
+	appropriate := false
+	executions := 1
+	var randMovie Movie
+	for appropriate == false {
+		url := "https://api.themoviedb.org/3/movie/top_rated?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&page="
+		//should produce a random number from 1 to 1000
+		randPage := generateRandomNumber(1, 70)
+		url = url + fmt.Sprint(randPage)
+		resp, err := http.Get(url)
+		if err != nil {
+			panic(err)
+		}
+		var results results
+		binary, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		json.Unmarshal(binary, &results)
+		pageSize := len(results.Results)
+		executions := 0
+		randIndex := generateRandomNumber(0, float64(pageSize))
+		randMovie = results.Results[randIndex]
+		appropriate = filterMovies(&randMovie)
+		executions++
+	}
+	println(executions)
+	//returns an empty struct and an error if function failed to produce a random movie.
+	if randMovie.Title == "" {
+		context.IndentedJSON(http.StatusInternalServerError, randMovie)
+	} else {
+		context.IndentedJSON(http.StatusOK, randMovie)
+	}
+}
+func trueRandomMovie(context *gin.Context) {
 	frontHalf := "https://api.themoviedb.org/3/movie/"
 	backHalf := "?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US"
 	var resp *http.Response
@@ -454,7 +487,7 @@ func randomMovie(context *gin.Context) {
 	//first execution must take place outside of loop
 	//If invalid, makes requests until it gets an OK response
 	for !appropriate {
-		id := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
+		id := generateRandomNumber(smallest, largest)
 		requestString := frontHalf + fmt.Sprint(id) + backHalf
 		resp, err = http.Get(requestString)
 		if err != nil {
@@ -484,13 +517,17 @@ func randomMovie(context *gin.Context) {
 // function is designed to test RNG formula
 func generateRandomNumber(smallest float64, largest float64) int {
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
-	id := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
-	return id
+	output := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
+	return output
 }
 
 func filterMovies(m *Movie) bool {
 	//checks if movie contains adult content
 	if m.Adult {
+		return false
+	}
+	//movie must have a rating above 0
+	if m.VoteAverage == 0 {
 		return false
 	}
 	//checks if movie is in English
