@@ -461,7 +461,7 @@ func randomMovie(context *gin.Context) {
 		json.Unmarshal(binary, &results)
 		pageSize := len(results.Results)
 		executions := 0
-		randIndex := generateRandomNumber(0, float64(pageSize))
+		randIndex := generateRandomNumber(0, float64(pageSize-1))
 		randMovie = results.Results[randIndex]
 		appropriate = filterMovies(&randMovie)
 		executions++
@@ -474,6 +474,7 @@ func randomMovie(context *gin.Context) {
 		context.IndentedJSON(http.StatusOK, randMovie)
 	}
 }
+
 func trueRandomMovie(context *gin.Context) {
 	frontHalf := "https://api.themoviedb.org/3/movie/"
 	backHalf := "?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US"
@@ -514,11 +515,23 @@ func trueRandomMovie(context *gin.Context) {
 	context.JSON(http.StatusOK, movieData)
 }
 
-// function is designed to test RNG formula
 func generateRandomNumber(smallest float64, largest float64) int {
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
 	output := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
 	return output
+}
+
+func analyzePopularPages() {
+	for i := 1; i <= 549; i++ {
+		var page results
+		resp, err := http.Get("https://api.themoviedb.org/3/movie/top_rated?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&page=" + fmt.Sprint(i))
+		if err != nil {
+			panic(err)
+		}
+		binary, _ := io.ReadAll(resp.Body)
+		json.Unmarshal(binary, &page)
+		println(len(page.Results))
+	}
 }
 
 func filterMovies(m *Movie) bool {
