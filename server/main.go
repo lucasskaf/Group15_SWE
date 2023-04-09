@@ -61,6 +61,7 @@ type Movie struct {
 	Title               string   `json:"title,omitempty"`                                                                                   // The movie's title.
 	VoteAverage         float64  `json:"vote_average"`                                                                                      // The average rating given to the movie by users.
 	VoteCount           int      `json:"vote_count,omitempty"`                                                                              // The number of user ratings given to the movie.
+	UserRating          float32  `json:"user_rating,omitempty"`
 }
 
 type results struct {
@@ -205,11 +206,11 @@ func createUser(context *gin.Context) {
 		context.JSON(http.StatusAlreadyReported, gin.H{"error": "u r an idiot"})
 		return //catches null requests and throws error.
 	}
-	sanitizeUser(&newUser)
+
+	valid, errString := validateUser(&newUser)
 	//throws error if username or password are blank
-	if newUser.Username == "" || newUser.Password == "" {
-		var emptyStruct User
-		context.IndentedJSON(http.StatusBadRequest, emptyStruct)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errString})
 		client.Disconnect(context)
 		return
 	}
@@ -226,6 +227,27 @@ func createUser(context *gin.Context) {
 	database.InsertOne(context, newUser)
 	context.IndentedJSON(http.StatusOK, newUser)
 	client.Disconnect(context)
+}
+
+// checks if user meets certain conditions for account creation (put multiple return types in parentheses separated by commas)
+func validateUser(user *User) (bool, string) {
+	sanitizeUser(user)
+	error := ""
+	isValid := true
+	if user.Username == "" && user.Password == "" {
+		isValid = false
+		error = "username or password cannot be blank"
+	}
+	userLen := len(user.Username)
+	passLen := len(user.Password)
+	if userLen < 4 || passLen < 4 {
+		error = "username and password must be at least 4 characters"
+	}
+	if userLen > 50 || passLen > 50 {
+		isValid = false
+		error = "username or password must be less than 50 characters"
+	}
+	return isValid, error
 }
 
 func sanitizeUser(user *User) {
@@ -289,6 +311,9 @@ func addToWatchlist(context *gin.Context) {
 		return //catches null requests and throws error.
 	}
 	sanitizeMovieFields(&movie, nil)
+	if movie.OriginalTitle == "" {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+	}
 	filter := bson.D{{"username", username}}
 	var updatedUser User
 	database.FindOne(context, filter).Decode(&updatedUser)
@@ -599,6 +624,9 @@ func createPost(context *gin.Context) {
 		return
 	}
 	sanitizePost(&newPost)
+	if newPost.Body == "" || newPost.Title == "" {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Post title or body cannot be blank"})
+	}
 	date := time.Now().Format("January 2, 2006")
 	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
@@ -753,6 +781,9 @@ func updatePost(context *gin.Context) {
 		return
 	}
 	sanitizePost(&updatedPost)
+	if updatedPost.Body == "" || updatedPost.Title == "" {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Post title or body cannot be blank"})
+	}
 	updatedPost.Date = time.Now().Format("January 2, 2006")
 	updateMade := bson.M{
 		"$set": bson.M{
