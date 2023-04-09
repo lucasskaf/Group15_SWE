@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { Emmiters } from '../emitters/emmiters';
-import { User } from '../user-auth/user';
+import { LoginRegisterService } from '../services/login-register.service';
+import { FormBuilder } from '@angular/forms';
 
 @Component({
   selector: 'app-home-page',
@@ -10,27 +11,45 @@ import { User } from '../user-auth/user';
 })
 export class HomePageComponent implements OnInit {
   isLoginOpen = false
+  isAuthenticated
+  username = ""
   message = 'Home Page'
 
+  generatorForm
+
   constructor(
-    private http : HttpClient
+    private formBuilder: FormBuilder
   ){}
 
   ngOnInit(): void {
-    this.http.get<User>("http://localhost:8080/user", {withCredentials: true}).subscribe({
-      next: (res) => {
-        this.message = `HEY ${res.username}`
-        Emmiters.userData.emit(res.username)
-        Emmiters.authEmmiter.emit(true)
-      },
-      error: (err) => {
-        this.message = 'You are not logged in'
-        Emmiters.authEmmiter.emit(false)
+    Emmiters.userData.subscribe(
+      {
+        next: (username : string) => {
+          this.username = username
+        }
       }
+    )
+
+    Emmiters.authEmmiter.subscribe(
+      {
+        next: (auth : boolean) => {
+          this.isAuthenticated = auth
+          this.message = 'Hey '
+        }
+      }
+    )
+
+    this.generatorForm = this.formBuilder.group({
+      actor: this.formBuilder.control(''),
+      genre: this.formBuilder.control(''),
+      rating: this.formBuilder.control(''),
+      runtimehour: this.formBuilder.control(''),
+      runtimeminutes: this.formBuilder.control(''),
+      provider: this.formBuilder.control('')
     })
   }
 
-  public toogleLoginStatus(loginStatus : boolean): void{
-    this.isLoginOpen = loginStatus;
+  onSubmit(generatorData){
+    console.log(generatorData)
   }
 }

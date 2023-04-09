@@ -10,7 +10,11 @@ import { NavBarComponent } from './nav-bar/nav-bar.component';
 import { UserAuthModule } from './user-auth/user-auth.module';
 import { HomePageComponent } from './home-page/home-page.component';
 import { MatIconModule } from '@angular/material/icon'
+import { MatCardModule } from '@angular/material/card';
 import { Routes } from '@angular/router';
+import { NgToastModule } from 'ng-angular-popup';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import { ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -27,6 +31,9 @@ import { Routes } from '@angular/router';
     ProfilePageModule,
     BrowserAnimationsModule,
     MatIconModule,
+    MatFormFieldModule,
+    NgToastModule,
+    ReactiveFormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]
