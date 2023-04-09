@@ -237,15 +237,18 @@ func validateUser(user *User) (bool, string) {
 	if user.Username == "" && user.Password == "" {
 		isValid = false
 		error = "username or password cannot be blank"
+		return isValid, error
 	}
 	userLen := len(user.Username)
 	passLen := len(user.Password)
 	if userLen < 4 || passLen < 4 {
 		error = "username and password must be at least 4 characters"
+		return isValid, error
 	}
 	if userLen > 50 || passLen > 50 {
 		isValid = false
 		error = "username or password must be less than 50 characters"
+		return isValid, error
 	}
 	return isValid, error
 }
@@ -623,9 +626,10 @@ func createPost(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return
 	}
-	sanitizePost(&newPost)
-	if newPost.Body == "" || newPost.Title == "" {
-		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Post title or body cannot be blank"})
+	valid, errorString := validatePost(&newPost)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errorString})
+		return
 	}
 	date := time.Now().Format("January 2, 2006")
 	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
@@ -665,6 +669,22 @@ func sanitizePost(post *Post) {
 	policy.AllowImages()
 	post.Title = policy.Sanitize(post.Title)
 	post.Body = policy.Sanitize(post.Body)
+}
+
+func validatePost(post *Post) (bool, string) {
+	valid := true
+	var error string
+	if post.Body == "" || post.Title == "" {
+		valid = false
+		error = "post title and body cannot be blank"
+		return valid, error
+	}
+	if len(post.Title) > 100 || len(post.Body) > 1000 {
+		valid = false
+		error = "post title or body is too long"
+		return valid, error
+	}
+	return valid, error
 }
 
 // this function deletes a post for the logged in user
@@ -780,9 +800,10 @@ func updatePost(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Failed to the parse updated post from request body"})
 		return
 	}
-	sanitizePost(&updatedPost)
-	if updatedPost.Body == "" || updatedPost.Title == "" {
-		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Post title or body cannot be blank"})
+	valid, errorString := validatePost(&updatedPost)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errorString})
+		return
 	}
 	updatedPost.Date = time.Now().Format("January 2, 2006")
 	updateMade := bson.M{
