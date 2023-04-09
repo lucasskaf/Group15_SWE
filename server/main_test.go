@@ -18,9 +18,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+func TestRandomMovie(t *testing.T) {
+	for i := 0; i < 10000; i++ {
+		recorder := httptest.NewRecorder()
+		context, _ := gin.CreateTestContext(httptest.NewRecorder())
+		randomMovie(context)
+		if recorder.Code != 200 {
+			t.Fail()
+		}
+	}
+}
+
 // escape + i and then :wq to exit vim
 // Tests average speed of random movie function ;  go test -timeout 10m -run ^TestRandomMovie$ bingebuddy.com/m
-func TestRandomMovie(t *testing.T) {
+func TestTrueRandomMovie(t *testing.T) {
 	//the gin framework allows you to create a test context to pass into functions that require it
 	context, _ := gin.CreateTestContext(httptest.NewRecorder())
 	//must hardcode generator range because test function doesn't go through normal startup process
