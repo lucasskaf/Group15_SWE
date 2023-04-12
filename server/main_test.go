@@ -200,8 +200,8 @@ func TestGetSimilarMovies(t *testing.T) {
 		}
 		getSimilarMovies(mockContext)
 		functionBinary, _ := io.ReadAll(mock.Body)
-		var r1 results
-		var r2 results
+		var r1 MovieResults
+		var r2 MovieResults
 		json.Unmarshal(httpBinary, &r1)
 		json.Unmarshal(functionBinary, &r2)
 		if !reflect.DeepEqual(r1, r2) {
