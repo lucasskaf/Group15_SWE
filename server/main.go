@@ -66,7 +66,8 @@ type Movie struct {
 }
 
 type MovieResults struct {
-	Results []Movie `json:"results"`
+	Results    []Movie `json:"results"`
+	TotalPages int     `json:"total_pages"`
 }
 
 type ActorResults struct {
@@ -547,12 +548,13 @@ func randomMovieWithFilters(context *gin.Context) {
 		json.Unmarshal(binary, &ActorResults)
 		//checks if requested actor exists
 		if len(ActorResults.Results) == 0 {
-			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "no results for actor " + filters.Actors[i]})
+			//context.IndentedJSON(http.StatusOK, gin.H{"error": "no results for actor " + filters.Actors[i]})
+			fmt.Printf("No resulst for actor" + filters.Actors[i])
 		} else {
 			actorIDs = append(actorIDs, ActorResults.Results[0].Id)
 		}
 	}
-	requestString := "https://api.themoviedb.org/3/discover/movie?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&include_adult=false&include_video=false&page=1&"
+	requestString := "https://api.themoviedb.org/3/discover/movie?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&include_adult=false&include_video=false&"
 	//adds the minimum rating
 	requestString += ("vote_average.gte=" + fmt.Sprintf("%f", filters.MinRating) + "&with_cast=")
 	//loop adds actors to request
@@ -591,15 +593,37 @@ func randomMovieWithFilters(context *gin.Context) {
 		panic(err)
 	}
 	json.Unmarshal(binary, &resultPage)
-	pageSize := len(resultPage.Results)
-	if pageSize == 0 {
+	if len(resultPage.Results) == 0 {
 		context.IndentedJSON(http.StatusOK, gin.H{"error": "No results"})
 		return
 	} else {
-		index := generateRandomNumber(0, float64(pageSize-1))
-		result := resultPage.Results[index]
-		context.IndentedJSON(http.StatusOK, result)
+		//select a random page if there is more than one page of results
+		if resultPage.TotalPages > 1 {
+			//resets slice
+			resultPage.Results = nil
+			//continues to execute if there are no movies in the given page
+			for len(resultPage.Results) == 0 {
+				if resultPage.TotalPages > 500 {
+					resultPage.TotalPages = 500
+				}
+				randomPage := generateRandomNumber(1, float64(resultPage.TotalPages))
+				newRequestString := requestString + "&page=" + strconv.Itoa(randomPage)
+				resp, err := http.Get(newRequestString)
+				if err != nil {
+					panic(err)
+				}
+				binary, err := io.ReadAll(resp.Body)
+				if err != nil {
+					panic(err)
+				}
+				json.Unmarshal(binary, &resultPage)
+			}
+		}
+
 	}
+	index := generateRandomNumber(0, float64(len(resultPage.Results)-1))
+	result := resultPage.Results[index]
+	context.IndentedJSON(http.StatusOK, result)
 }
 
 func trueRandomMovie(context *gin.Context) {
