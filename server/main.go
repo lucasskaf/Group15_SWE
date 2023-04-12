@@ -1166,7 +1166,7 @@ func main() {
 	router.GET("/me", getUserInfo)
 	router.GET("/generate", randomMovie)
 	router.GET("/generate/similar/:id", getSimilarMovies)
-	router.GET("/posts/:id/:page")
+	router.GET("/posts/:id/:page", getPosts)
 	router.POST("/generate/filters", randomMovieWithFilters)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
