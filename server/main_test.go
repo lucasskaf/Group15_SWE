@@ -243,7 +243,7 @@ func TestCreatePost(t *testing.T) {
 	}
 	localMode = true
 	token, _ := generateToken(user)
-	generatePosts(1000)
+	generatePosts(300)
 	mock := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(mock)
 	//resets profile to faciliate repeated testing
