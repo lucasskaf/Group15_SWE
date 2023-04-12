@@ -189,7 +189,7 @@ func login(context *gin.Context) {
 	}
 	//sanitizes user profile before searching database
 	sanitizeUser(&credentials)
-	filter := bson.D{{"username", credentials.Username}, {"password", credentials.Password}}
+	filter := bson.D{{Key: "username", Value: credentials.Username}, {Key: "password", Value: credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
 	//database.Find(context, filter)
@@ -237,7 +237,7 @@ func createUser(context *gin.Context) {
 
 	//checks for duplicate username
 	var duplicate User
-	filter := bson.D{{"username", newUser.Username}}
+	filter := bson.D{{Key: "username", Value: newUser.Username}}
 	err := database.FindOne(context, filter).Decode(&duplicate)
 	if err != mongo.ErrNoDocuments {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Username is taken"})
@@ -337,7 +337,7 @@ func addToWatchlist(context *gin.Context) {
 	if movie.OriginalTitle == "" {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 	}
-	filter := bson.D{{"username", username}}
+	filter := bson.D{{Key: "username", Value: username}}
 	var updatedUser User
 	database.FindOne(context, filter).Decode(&updatedUser)
 	updatedUser.Watchlist = append(updatedUser.Watchlist, movie)
@@ -381,7 +381,7 @@ func removeFromWatchlist(context *gin.Context) {
 		return //catches null requests and throws error.
 	}
 	//filter := bson.D{{"username.watchlist", movie.Title}}
-	filter := bson.D{{"username", username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
+	filter := bson.D{{Key: "username", Value: username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
 	result := database.FindOneAndDelete(context, filter)
 	//returns error if deletion fails
 	if result == nil {
@@ -416,7 +416,7 @@ func removeUser(context *gin.Context) {
 	username := claims["username"].(string)
 	client := connectToDB()
 	database := client.Database("UserInfo").Collection("UserInfo")
-	filter := bson.D{{"username", username}}
+	filter := bson.D{{Key: "username", Value: username}}
 	result := database.FindOneAndDelete(context, filter)
 	//returns error if user doesn't exist
 	if result == nil {
@@ -464,8 +464,8 @@ func updateUserInfo(context *gin.Context) {
 		return
 	}
 
-	duplicateFilter := bson.D{{"username", updatedUser.Username}}
-	updateFilter := bson.D{{"username", username}}
+	duplicateFilter := bson.D{{Key: "username", Value: updatedUser.Username}}
+	updateFilter := bson.D{{Key: "username", Value: username}}
 
 	//checks whether desired username already exists
 	error := database.FindOne(context, duplicateFilter).Decode(&currProfile)
@@ -942,10 +942,11 @@ func getPosts(context *gin.Context) {
 	}
 	client := connectToDB()
 	database := client.Database("ForumPosts").Collection("ForumPosts")
-	filter := bson.D{{"movie_id", id}}
+	filter := bson.D{{Key: "movieid", Value: id}}
 	//have to set options to sort posts from most to least recent and limit the amount of retrievals
-	//opts := options.Find().SetLimit(int64(pageInt) * 50).SetSort(bson.D{{"$natural", -1}})
-	cursor, err := database.Find(context, filter)
+	opts := options.Find().SetLimit(int64(pageInt) * 50).SetSort(bson.D{{"$natural", -1}})
+	//database.FindOne(context, filter).Decode(&post)
+	cursor, err := database.Find(context, filter, opts)
 	if err == mongo.ErrNoDocuments {
 		context.IndentedJSON(http.StatusOK, gin.H{"error": "no posts found"})
 	}
@@ -985,7 +986,7 @@ func getUserInfo(context *gin.Context) {
 	client := connectToDB()
 
 	database := client.Database("UserInfo").Collection("UserInfo")
-	filter := bson.D{{"username", username}}
+	filter := bson.D{{Key: "username", Value: username}}
 	var user User
 	err = database.FindOne(context, filter).Decode(&user)
 	if err != nil {
