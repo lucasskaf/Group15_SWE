@@ -14,7 +14,12 @@ import { MatCardModule } from '@angular/material/card';
 import { Routes } from '@angular/router';
 import { NgToastModule } from 'ng-angular-popup';
 import {MatFormFieldModule} from '@angular/material/form-field';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatSelectModule } from '@angular/material/select'
+import { MatSliderModule } from '@angular/material/slider'
+import {MatInputModule} from '@angular/material/input';
 
 @NgModule({
   declarations: [
@@ -33,7 +38,13 @@ import { ReactiveFormsModule } from '@angular/forms';
     MatIconModule,
     MatFormFieldModule,
     NgToastModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MatChipsModule,
+    MatAutocompleteModule,
+    MatSelectModule,
+    MatSliderModule,
+    FormsModule,
+    MatInputModule
   ],
   providers: [],
   bootstrap: [AppComponent]

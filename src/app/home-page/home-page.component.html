@@ -10,7 +10,49 @@
             </h2>
         </div>
         <form [formGroup]="generatorForm" (ngSubmit)="onSubmit(generatorForm.value)" action="">
-            <div id="actor-div">
+            <mat-form-field class="mat-form" color="primary" appearance="outline">
+                    <mat-label>Actors</mat-label>
+                    <input matInput placeholder="Test" value="test1" formControlName="actorCtrl">
+            </mat-form-field>
+            <mat-form-field class="mat-form" color="primary" appearance="outline">
+                <mat-label>Genres</mat-label>
+                <mat-select multiple formControlName="genresCtrl">
+                    <mat-option [value]="12">Adventure</mat-option>
+                    <mat-option [value]="16">Animation</mat-option>
+                    <mat-option [value]="35">Comedy</mat-option>
+                    <mat-option [value]="80">Crime</mat-option>
+                    <mat-option [value]="99">Documentary</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <mat-form-field class="mat-form" color="primary" appearance="outline">
+                <mat-label>Minimum Rating</mat-label>
+                <mat-select formControlName="ratingCtrl">
+                    <mat-option [value]="5">★★★★★</mat-option>
+                    <mat-option [value]="4">★★★★☆</mat-option>
+                    <mat-option [value]="3">★★★☆☆</mat-option>
+                    <mat-option [value]="2">★★☆☆☆</mat-option>
+                    <mat-option [value]="1">★☆☆☆☆</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <mat-form-field class="mat-form" color="primary" appearance="outline">
+                <mat-label>Streaming Provider</mat-label>
+                <mat-select multiple formControlName="providerCtrl">
+                    <mat-option [value]="5">Disney+</mat-option>
+                    <mat-option [value]="4">Hulu</mat-option>
+                    <mat-option [value]="3">Amazon Prime</mat-option>
+                    <mat-option [value]="2">HBO Max</mat-option>
+                    <mat-option [value]="1">Netflix</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <mat-label>Maximum Runtime</mat-label>
+            <mat-slider class="mat-form" min="0" max="420" step="10" showTickMarks discrete [displayWith]="formatLabel">
+                <input matSliderThumb formControlName="runtimeCtrl">
+            </mat-slider>
+            <button mat-raised-button
+            color="warn" type="submit">Generate</button>
+            
+           
+            <!-- <div id="actor-div">
                 <label for="actor-input">Actor:</label>
                 <input id="actor-input" type="text" placeholder="Search" formControlName="actor">
             </div>
@@ -48,7 +90,8 @@
                     <option value="amazonprime">Amazon Prime</option>
                 </select>
             </div>
-            <button type="submit">Generate</button>
+            <button mat-raised-button
+            color="warn" type="submit">Generate</button> -->
         </form>
     </div>
     <div id="bg">

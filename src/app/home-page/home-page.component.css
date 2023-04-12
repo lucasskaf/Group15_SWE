@@ -1,3 +1,7 @@
+* {
+    font-family: 'Montserrat', sans-serif;
+}
+
 #bg-svg {
     padding-top: 32vh;
     background-color: rgb(255, 239, 220);
@@ -12,10 +16,7 @@
     display: flex;
     width: 100%;
     align-items: center;
-}
-
-form {
-    display: block;
+    margin-bottom: 10px;
 }
 
 h2 {
@@ -46,30 +47,21 @@ h2 span {
     border-radius: 39px;
 }
 
-form div {
-    text-align: center;
-    margin: 1vh 0;
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     width: 100%;
 }
 
-form div input, form div select {
-    height: 4vh;
+.mat-form {
     width: 100%;
-    margin: 1vh 0;
-    border-radius: 5px;
-    
+    background-color: #FBFEF9;
 }
 
-form div label {
-    display: block;
-    text-align: left;
-}
-
-form div p {
-    display: inline;
-    margin: 0 10px 0 10px;
-}
-
-#runtime-hour, #runtime-minutes {
-    width: 10%;
-}
+form button {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+    font-weight: bold;
+} 
