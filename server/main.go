@@ -954,28 +954,32 @@ func getPosts(context *gin.Context) {
 	database := client.Database("ForumPosts").Collection("ForumPosts")
 	filter := bson.D{{Key: "movieid", Value: id}}
 	//have to set options to sort posts from most to least recent and limit the amount of retrievals
-	opts := options.Find().SetLimit(int64(pageInt) * 50).SetSort(bson.D{{"$natural", -1}})
+	opts := options.Find().SetLimit(50).SetSort(bson.D{{"$natural", -1}}).SetSkip(int64(pageInt-1) * 50)
 	//database.FindOne(context, filter).Decode(&post)
 	cursor, err := database.Find(context, filter, opts)
-	if err == mongo.ErrNoDocuments {
-		context.IndentedJSON(http.StatusOK, gin.H{"error": "no posts found"})
-	}
 	//marshals every result into the array
 	var posts []Post
 	if err = cursor.All(context, &posts); err != nil {
 		panic(err)
 	}
-	if len(posts) < 50 {
-		context.IndentedJSON(http.StatusOK, posts)
-	} else {
-		lowerBound := (pageInt - 1) * 50
-		upperBound := pageInt * 50
-		//corrects for out of bounds page requests
-		if upperBound > len(posts) {
-			upperBound = len(posts)
-			lowerBound = upperBound - 50
+	if len(posts) == 0 {
+		/*works by sorting posts in REVERSE chronological order, getting the FIRST 50,
+		and flipping the order in the slice before sending it back to the frontend*/
+		opts := options.Find().SetLimit(50).SetSort(bson.D{{"$natural", 1}})
+		cursor, err := database.Find(context, filter, opts)
+		if err = cursor.All(context, &posts); err != nil {
+			panic(err)
 		}
-		posts = posts[lowerBound:upperBound]
+		if len(posts) == 0 {
+			context.IndentedJSON(http.StatusOK, gin.H{"error": "No posts found"})
+		} else {
+			//reverses order of posts before return - code from https://golangprojectstructure.com/reversing-go-slice-array/#concurrent-reordering
+			for i, j := 0, len(posts)-1; i < j; i, j = i+1, j-1 {
+				posts[i], posts[j] = posts[j], posts[i]
+			}
+			context.IndentedJSON(http.StatusOK, posts)
+		}
+	} else {
 		context.IndentedJSON(http.StatusOK, posts)
 	}
 	client.Disconnect(context)
