@@ -593,15 +593,37 @@ func randomMovieWithFilters(context *gin.Context) {
 		panic(err)
 	}
 	json.Unmarshal(binary, &resultPage)
-	pageSize := len(resultPage.Results)
-	if pageSize == 0 {
+	if len(resultPage.Results) == 0 {
 		context.IndentedJSON(http.StatusOK, gin.H{"error": "No results"})
 		return
 	} else {
-		index := generateRandomNumber(0, float64(pageSize-1))
-		result := resultPage.Results[index]
-		context.IndentedJSON(http.StatusOK, result)
+		//select a random page if there is more than one page of results
+		if resultPage.TotalPages > 1 {
+			//resets slice
+			resultPage.Results = nil
+			//continues to execute if there are no movies in the given page
+			for len(resultPage.Results) == 0 {
+				if resultPage.TotalPages > 500 {
+					resultPage.TotalPages = 500
+				}
+				randomPage := generateRandomNumber(1, float64(resultPage.TotalPages))
+				newRequestString := requestString + "&page=" + strconv.Itoa(randomPage)
+				resp, err := http.Get(newRequestString)
+				if err != nil {
+					panic(err)
+				}
+				binary, err := io.ReadAll(resp.Body)
+				if err != nil {
+					panic(err)
+				}
+				json.Unmarshal(binary, &resultPage)
+			}
+		}
+
 	}
+	index := generateRandomNumber(0, float64(len(resultPage.Results)-1))
+	result := resultPage.Results[index]
+	context.IndentedJSON(http.StatusOK, result)
 }
 
 func trueRandomMovie(context *gin.Context) {
