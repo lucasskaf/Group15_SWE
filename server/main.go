@@ -66,7 +66,8 @@ type Movie struct {
 }
 
 type MovieResults struct {
-	Results []Movie `json:"results"`
+	Results    []Movie `json:"results"`
+	TotalPages int     `json:"total_pages"`
 }
 
 type ActorResults struct {
@@ -547,12 +548,13 @@ func randomMovieWithFilters(context *gin.Context) {
 		json.Unmarshal(binary, &ActorResults)
 		//checks if requested actor exists
 		if len(ActorResults.Results) == 0 {
-			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "no results for actor " + filters.Actors[i]})
+			//context.IndentedJSON(http.StatusOK, gin.H{"error": "no results for actor " + filters.Actors[i]})
+			fmt.Printf("No resulst for actor" + filters.Actors[i])
 		} else {
 			actorIDs = append(actorIDs, ActorResults.Results[0].Id)
 		}
 	}
-	requestString := "https://api.themoviedb.org/3/discover/movie?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&include_adult=false&include_video=false&page=1&"
+	requestString := "https://api.themoviedb.org/3/discover/movie?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&include_adult=false&include_video=false&"
 	//adds the minimum rating
 	requestString += ("vote_average.gte=" + fmt.Sprintf("%f", filters.MinRating) + "&with_cast=")
 	//loop adds actors to request
