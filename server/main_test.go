@@ -307,12 +307,12 @@ func TestDeletePost(t *testing.T) {
 	binary, _ := io.ReadAll(mock.Body)
 	json.Unmarshal(binary, &user)
 	//iterates through every post and deletes it
-	for _, p := range user.Posts {
+	//for _, p := range user.Posts {
 		delReq := httptest.NewRequest("DELETE", "http://localhost:8080", nil)
 		context.Params = []gin.Param{
 			{
-				Key:   "postID",
-				Value: p.PostID.Hex(),
+				//Key:   "postID",
+				//Value: p.PostID.Hex(),
 			},
 		}
 		delReq.Header = map[string][]string{

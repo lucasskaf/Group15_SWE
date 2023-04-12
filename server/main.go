@@ -193,7 +193,7 @@ func login(context *gin.Context) {
 	}
 	//sanitizes user profile before searching database
 	sanitizeUser(&credentials)
-	filter := bson.D{{"username", credentials.Username}, {"password", credentials.Password}}
+	filter := bson.D{{Key: "username", Value: credentials.Username}, {Key: "password", Value: credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
 	//database.Find(context, filter)
@@ -241,7 +241,7 @@ func createUser(context *gin.Context) {
 
 	//checks for duplicate username
 	var duplicate User
-	filter := bson.D{{"username", newUser.Username}}
+	filter := bson.D{{Key: "username", Value: newUser.Username}}
 	err := database.FindOne(context, filter).Decode(&duplicate)
 	if err != mongo.ErrNoDocuments {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Username is taken"})
@@ -341,7 +341,7 @@ func addToWatchlist(context *gin.Context) {
 	if movie.OriginalTitle == "" {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 	}
-	filter := bson.D{{"username", username}}
+	filter := bson.D{{Key: "username", Value: username}}
 	var updatedUser User
 	database.FindOne(context, filter).Decode(&updatedUser)
 	updatedUser.Watchlist = append(updatedUser.Watchlist, movie)
@@ -385,7 +385,7 @@ func removeFromWatchlist(context *gin.Context) {
 		return //catches null requests and throws error.
 	}
 	//filter := bson.D{{"username.watchlist", movie.Title}}
-	filter := bson.D{{"username", username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
+	filter := bson.D{{Key: "username", Value: username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
 	result := database.FindOneAndDelete(context, filter)
 	//returns error if deletion fails
 	if result == nil {
@@ -420,7 +420,7 @@ func removeUser(context *gin.Context) {
 	username := claims["username"].(string)
 	client := connectToDB()
 	database := client.Database("UserInfo").Collection("UserInfo")
-	filter := bson.D{{"username", username}}
+	filter := bson.D{{Key: "username", Value: username}}
 	result := database.FindOneAndDelete(context, filter)
 	//returns error if user doesn't exist
 	if result == nil {
@@ -468,8 +468,8 @@ func updateUserInfo(context *gin.Context) {
 		return
 	}
 
-	duplicateFilter := bson.D{{"username", updatedUser.Username}}
-	updateFilter := bson.D{{"username", username}}
+	duplicateFilter := bson.D{{Key: "username", Value: updatedUser.Username}}
+	updateFilter := bson.D{{Key: "username", Value: username}}
 
 	//checks whether desired username already exists
 	error := database.FindOne(context, duplicateFilter).Decode(&currProfile)
@@ -942,6 +942,45 @@ func updatePost(context *gin.Context) {
 	client.Disconnect(context)
 }
 
+func getPosts(context *gin.Context) {
+	id := context.Param("id")
+	page := context.Param("page")
+	//converts page number into an integer and handles invalid inputs
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		pageInt = 1
+	}
+	client := connectToDB()
+	database := client.Database("ForumPosts").Collection("ForumPosts")
+	filter := bson.D{{Key: "movieid", Value: id}}
+	//have to set options to sort posts from most to least recent and limit the amount of retrievals
+	opts := options.Find().SetLimit(int64(pageInt) * 50).SetSort(bson.D{{"$natural", -1}})
+	//database.FindOne(context, filter).Decode(&post)
+	cursor, err := database.Find(context, filter, opts)
+	if err == mongo.ErrNoDocuments {
+		context.IndentedJSON(http.StatusOK, gin.H{"error": "no posts found"})
+	}
+	//marshals every result into the array
+	var posts []Post
+	if err = cursor.All(context, &posts); err != nil {
+		panic(err)
+	}
+	if len(posts) < 50 {
+		context.IndentedJSON(http.StatusOK, posts)
+	} else {
+		lowerBound := (pageInt - 1) * 50
+		upperBound := pageInt * 50
+		//corrects for out of bounds page requests
+		if upperBound > len(posts) {
+			upperBound = len(posts)
+			lowerBound = upperBound - 50
+		}
+		posts = posts[lowerBound:upperBound]
+		context.IndentedJSON(http.StatusOK, posts)
+	}
+	client.Disconnect(context)
+}
+
 func getUserInfo(context *gin.Context) {
 	header := context.GetHeader("Authorization")
 	headerToken := strings.ReplaceAll(header, "Bearer ", "")
@@ -957,7 +996,7 @@ func getUserInfo(context *gin.Context) {
 	client := connectToDB()
 
 	database := client.Database("UserInfo").Collection("UserInfo")
-	filter := bson.D{{"username", username}}
+	filter := bson.D{{Key: "username", Value: username}}
 	var user User
 	err = database.FindOne(context, filter).Decode(&user)
 	if err != nil {
@@ -1127,6 +1166,7 @@ func main() {
 	router.GET("/me", getUserInfo)
 	router.GET("/generate", randomMovie)
 	router.GET("/generate/similar/:id", getSimilarMovies)
+	router.GET("/posts/:id/:page")
 	router.POST("/generate/filters", randomMovieWithFilters)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
