@@ -35,6 +35,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/gin-contrib/cors"
 )
 
 // this is the movie struct that contains all the different fields for a movie
@@ -112,10 +114,11 @@ var localMode bool
 
 // this is the post struct that contains all the different fields for a certain post
 type Post struct {
-	PostID primitive.ObjectID `json:"id"`
-	Title  string             `json:"title"`
-	Body   string             `json:"body"`
-	Date   string             `json:"date"`
+	PostID   primitive.ObjectID `json:"id"`
+	Username string             `json:"username"`
+	Title    string             `json:"title"`
+	Body     string             `json:"body"`
+	Date     string             `json:"date"`
 }
 
 // this function connects the server/client to mongodb database whenever it is called
@@ -166,8 +169,7 @@ func login(context *gin.Context) {
 	if err := context.BindJSON(&credentials); err != nil {
 		fmt.Printf("Json binding failed")
 	}
-	//sanitizes user profile before searching database
-	sanitizeUser(&credentials)
+
 	filter := bson.D{{"username", credentials.Username}, {"password", credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
@@ -188,13 +190,32 @@ func login(context *gin.Context) {
 		panic(err)
 	}
 
-	context.JSON(http.StatusOK, gin.H{"token": token})
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Expires:  time.Now().Add(time.Hour * 24),
+		HttpOnly: true,
+	}
+	http.SetCookie(context.Writer, cookie)
 
 	// context.JSON(http.StatusOK, gin.H{"token": token, "user_data": retrieved})
 	context.JSON(http.StatusOK, gin.H{"message": cookie})
 
 	fmt.Printf("login successful!")
-	client.Disconnect(context)
+	// client.Disconnect(context)
+}
+
+func logout(context *gin.Context) {
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		HttpOnly: true,
+	}
+
+	http.SetCookie(context.Writer, cookie)
+
+	context.JSON(http.StatusOK, gin.H{"message": cookie})
 }
 
 // this function creates a brand new user and inserts it into the database
@@ -839,8 +860,8 @@ func updatePost(context *gin.Context) {
 }
 
 func getUserInfo(context *gin.Context) {
-	header := context.GetHeader("Authorization")
-	headerToken := strings.ReplaceAll(header, "Bearer ", "")
+	cookie, _ := context.Cookie("token")
+	headerToken := strings.ReplaceAll(cookie, "Bearer ", "")
 	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
@@ -1017,9 +1038,20 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	//Sets up routing
 	router := gin.Default()
-	router.Use(CORSMiddleware())
-	router.GET("/login", login)
-	router.GET("/me", getUserInfo)
+	// router.Use(CORSMiddleware())
+	router.Use(
+		cors.New(
+			cors.Config{
+				AllowOrigins:     []string{"http://localhost:4200", "http://localhost:4200/user"},
+				AllowMethods:     []string{"GET", "POST", "DELETE", "PUT"},
+				AllowHeaders:     []string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "accept", "origin", "Cache-Control"},
+				AllowCredentials: true,
+			},
+		),
+	)
+	router.POST("/login", login)
+	router.POST("/logout", logout)
+	router.GET("/user", getUserInfo)
 	router.GET("/generate", randomMovie)
 	router.GET("/generate/:id/similar", getSimilarMovies)
 	router.POST("/signup", createUser)
