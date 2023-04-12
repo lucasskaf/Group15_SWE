@@ -19,6 +19,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -66,8 +67,12 @@ type Movie struct {
 	UserRating          float32  `json:"user_rating,omitempty"`
 }
 
-type results struct {
+type MovieResults struct {
 	Results []Movie `json:"results"`
+}
+
+type ActorResults struct {
+	Results []Actor `json:"results"`
 }
 
 // struct for getting IDs from movie database
@@ -82,14 +87,15 @@ type parseStruct struct {
 
 // this is the user struct that contains all the different fields for a certain user
 type User struct {
-	Username      string   `json:"username"`
-	Password      string   `json:"password"`
-	Email         string   `json:"email"`
-	Watchlist     []Movie  `json:"watchlist"`
-	Posts         []Post   `json:"posts"`
-	Genres        []string `json:"genres"`
-	Rating        float32  `json:"rating"`
-	Subscriptions []string `json:"subscriptions"`
+	Username      string           `json:"username"`
+	Password      string           `json:"password"`
+	Email         string           `json:"email"`
+	Watchlist     []Movie          `json:"watchlist"`
+	Posts         []Post           `json:"posts"`
+	Genres        []string         `json:"genres"`
+	Rating        float32          `json:"rating"`
+	Subscriptions []string         `json:"subscriptions"`
+	ActiveFilters GeneratorFilters `json:"active_filters"`
 }
 
 type ForumComment struct {
@@ -103,6 +109,24 @@ type GeneratorParameters struct {
 	LastUpdated time.Time `json:"lastUpdated"`
 	Largest     int       `json:"largest"`
 	Smallest    int       `json:"smallest"`
+}
+
+type GeneratorFilters struct {
+	//Actors and genres have to be comma separated lists of IDs
+	Actors     []string `json:"actors"`
+	MaxRuntime int      `json:"max_runtime"`
+	Genres     []int    `json:"genres"`
+	MinRating  float32  `json:"min_rating"`
+	Providers  []int    `json:"streaming_providers"`
+}
+
+type NameAndID struct {
+	Name string `json:"name"`
+	Id   int    `json:"id"`
+}
+
+type Actor struct {
+	Id int `json:"id"`
 }
 
 // global generator parameters
@@ -503,7 +527,7 @@ func randomMovie(context *gin.Context) {
 		if err != nil {
 			panic(err)
 		}
-		var results results
+		var results MovieResults
 		binary, err := io.ReadAll(resp.Body)
 		if err != nil {
 			panic(err)
@@ -522,6 +546,85 @@ func randomMovie(context *gin.Context) {
 		context.IndentedJSON(http.StatusInternalServerError, randMovie)
 	} else {
 		context.IndentedJSON(http.StatusOK, randMovie)
+	}
+}
+
+func randomMovieWithFilters(context *gin.Context) {
+	var filters GeneratorFilters
+	filters.MaxRuntime = 4294967295
+	filters.MinRating = 0
+	context.BindJSON(&filters)
+	//first assembles actor IDs for query
+	var actorIDs []int
+	var ActorResults ActorResults
+
+	for i := 0; i < len(filters.Actors); i++ {
+		frontHalf := "https://api.themoviedb.org/3/search/person?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&query="
+		backHalf := "&page=1&include_adult=false"
+		requestString := frontHalf + url.QueryEscape(filters.Actors[i]) + backHalf
+		resp, err := http.Get(requestString)
+		if err != nil {
+			panic(err)
+		}
+		binary, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		json.Unmarshal(binary, &ActorResults)
+		//checks if requested actor exists
+		if len(ActorResults.Results) == 0 {
+			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "no results for actor " + filters.Actors[i]})
+		} else {
+			actorIDs = append(actorIDs, ActorResults.Results[0].Id)
+		}
+	}
+	requestString := "https://api.themoviedb.org/3/discover/movie?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&include_adult=false&include_video=false&page=1&"
+	//adds the minimum rating
+	requestString += ("vote_average.gte=" + fmt.Sprintf("%f", filters.MinRating) + "&with_cast=")
+	//loop adds actors to request
+	for _, a := range actorIDs {
+		requestString += (strconv.Itoa(a) + ",")
+	}
+	requestString += "&with_genres="
+	//loop adds genres to request
+	for _, g := range filters.Genres {
+		requestString += (strconv.Itoa(g) + ",")
+	}
+	//specifies maximum runtime
+	requestString += ("&with_runtime.lte=" + strconv.Itoa(filters.MaxRuntime))
+	//adds streaming providers
+	requestString += "&with_watch_providers="
+	for _, p := range filters.Providers {
+		requestString += (strconv.Itoa(p) + ",")
+	}
+	resp, err := http.Get(requestString)
+	if err != nil {
+		panic(err)
+	}
+	binary, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	//makes request with full string
+	var resultPage MovieResults
+	resp, err = http.Get(requestString)
+	if err != nil {
+		panic(err)
+	}
+	binary, err = io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	json.Unmarshal(binary, &resultPage)
+	pageSize := len(resultPage.Results)
+	if pageSize == 0 {
+		context.IndentedJSON(http.StatusOK, gin.H{"error": "No results"})
+		return
+	} else {
+		index := generateRandomNumber(0, float64(pageSize-1))
+		result := resultPage.Results[index]
+		context.IndentedJSON(http.StatusOK, result)
 	}
 }
 
@@ -573,7 +676,7 @@ func generateRandomNumber(smallest float64, largest float64) int {
 
 func analyzePopularPages() {
 	for i := 1; i <= 549; i++ {
-		var page results
+		var page MovieResults
 		resp, err := http.Get("https://api.themoviedb.org/3/movie/top_rated?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&page=" + fmt.Sprint(i))
 		if err != nil {
 			panic(err)
@@ -612,7 +715,7 @@ func getSimilarMovies(context *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	var results results
+	var results MovieResults
 	json.Unmarshal(body, &results)
 	context.JSON(http.StatusOK, results)
 }
@@ -1032,6 +1135,7 @@ func main() {
 	database.FindOne(context.Background(), filter).Decode(&parameters)
 	largest = float64(parameters.Largest)
 	smallest = float64(parameters.Smallest)
+	client.Disconnect(context.Background())
 	localMode = false
 	//Uncomment out to speed up unit tests by deleting debug message
 	os.Setenv("GIN_MODE", "release")
@@ -1053,7 +1157,8 @@ func main() {
 	router.POST("/logout", logout)
 	router.GET("/user", getUserInfo)
 	router.GET("/generate", randomMovie)
-	router.GET("/generate/:id/similar", getSimilarMovies)
+	router.GET("/generate/similar/:id", getSimilarMovies)
+	router.POST("/generate/filters", randomMovieWithFilters)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
 	router.POST("/posts", createPost)
