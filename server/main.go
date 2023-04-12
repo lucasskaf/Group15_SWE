@@ -3,7 +3,6 @@ package main
 //imports commented out to avoid generating errors for unused
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"io"
@@ -14,7 +13,7 @@ import (
 	//"gorm.io/gorm"
 
 	//"compress/gzip"
-	"compress/gzip"
+
 	"fmt"
 	"log"
 	"math/rand"
@@ -997,118 +996,118 @@ func getUserInfo(context *gin.Context) {
 }
 
 // Checks ID range with API automatically on startup
-func updateGeneratorParameters() {
-	client := connectToDB()
-	database := client.Database("GeneratorParameters").Collection("GeneratorParameters")
-	context := context.Background()
-	var parameters GeneratorParameters
-	/*DELETE THIS LATER - FOR DEBUGGING*/
-	firstExecution := false
-	//finds parameters
-	filter := bson.D{{}}
-	database.FindOne(context, filter).Decode(&parameters)
-	var lastUpdated time.Duration
-	if parameters.Largest != 0 {
-		lastUpdated = time.Since(parameters.LastUpdated)
-	}
-	//performs update if it's been more than 24 hours
-	if firstExecution || lastUpdated.Hours() > 24.00 {
-		//gets current date for request to API
-		Date := time.Now()
-		year, month, day := Date.Date()
-		//converts date elements to strings
-		var monthString = strconv.Itoa(int(month))
-		var dayString = strconv.Itoa(day)
-		//adds leading zeroes if necessary
-		if len(monthString) == 1 {
-			monthString = "0" + monthString
-		}
+// func updateGeneratorParameters() {
+// 	client := connectToDB()
+// 	database := client.Database("GeneratorParameters").Collection("GeneratorParameters")
+// 	context := context.Background()
+// 	var parameters GeneratorParameters
+// 	/*DELETE THIS LATER - FOR DEBUGGING*/
+// 	firstExecution := false
+// 	//finds parameters
+// 	filter := bson.D{{}}
+// 	database.FindOne(context, filter).Decode(&parameters)
+// 	var lastUpdated time.Duration
+// 	if parameters.Largest != 0 {
+// 		lastUpdated = time.Since(parameters.LastUpdated)
+// 	}
+// 	//performs update if it's been more than 24 hours
+// 	if firstExecution || lastUpdated.Hours() > 24.00 {
+// 		//gets current date for request to API
+// 		Date := time.Now()
+// 		year, month, day := Date.Date()
+// 		//converts date elements to strings
+// 		var monthString = strconv.Itoa(int(month))
+// 		var dayString = strconv.Itoa(day)
+// 		//adds leading zeroes if necessary
+// 		if len(monthString) == 1 {
+// 			monthString = "0" + monthString
+// 		}
 
-		if len(dayString) == 1 {
-			dayString = "0" + dayString
-		}
-		//puts request string together
-		requestString := "http://files.tmdb.org/p/exports/movie_ids_" + monthString + "_" + dayString + "_" + strconv.Itoa(year) + ".json.gz"
-		//requests file from database
-		resp, err := http.Get(requestString)
-		if err != nil {
-			panic(err)
-		}
-		defer resp.Body.Close()
+// 		if len(dayString) == 1 {
+// 			dayString = "0" + dayString
+// 		}
+// 		//puts request string together
+// 		requestString := "http://files.tmdb.org/p/exports/movie_ids_" + monthString + "_" + dayString + "_" + strconv.Itoa(year) + ".json.gz"
+// 		//requests file from database
+// 		resp, err := http.Get(requestString)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		defer resp.Body.Close()
 
-		//creates temporary file for reading
-		file, err := os.Create("validIDs")
-		if err != nil {
-			panic(err)
-		}
-		//deletes file after scan is finished
-		defer os.Remove("validIDs")
+// 		//creates temporary file for reading
+// 		file, err := os.Create("validIDs")
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		//deletes file after scan is finished
+// 		defer os.Remove("validIDs")
 
-		//writes http response body to temp file
-		_, err = io.Copy(file, resp.Body)
-		if err != nil {
-			panic(err)
-		}
-		//closes initial file writing
-		file.Close()
-		//opens file again for decompression
-		gzipFile, err := os.Open("validIDs")
-		if err != nil {
-			panic(err)
-		}
-		//creates a destination for uncompressed file
-		out, err := os.Create("Uncompressed.json")
-		if err != nil {
-			panic(err)
-		}
-		defer os.Remove("Uncompressed.json")
-		//decompresses original file stream
-		reader, err := gzip.NewReader(gzipFile)
-		if err != nil {
-			panic(err)
-		}
-		_, err = io.Copy(out, reader)
-		if err != nil {
-			panic(err)
-		}
-		out.Close()
-		reader.Close()
-		//opens file again so that scanner will work
-		scannerFile, err := os.Open("Uncompressed.json")
-		if err != nil {
-			panic(err)
-		}
-		defer scannerFile.Close()
-		//scans file line by line
-		fileScanner := bufio.NewScanner(scannerFile)
-		largest := 0
-		smallest := 4294967295
-		for fileScanner.Scan() {
-			var lineStruct parseStruct
-			//gets line of JSON file
-			binaryLine := fileScanner.Bytes()
-			//unmarshals binary into a struct
-			json.Unmarshal(binaryLine, &lineStruct)
-			if lineStruct.Id > largest {
-				largest = lineStruct.Id
-			}
-			if lineStruct.Id < smallest {
-				smallest = lineStruct.Id
-			}
-		}
-		//inserts these parameters into database
-		parameters.Largest = largest
-		parameters.Smallest = smallest
-		parameters.LastUpdated = time.Now()
-		database.FindOneAndReplace(context, filter, parameters)
-		fmt.Println("Largest: " + fmt.Sprint(largest))
-		fmt.Println("Smallest: " + fmt.Sprint(smallest))
-		fmt.Println("Database updated!")
-	} else {
-		fmt.Println("database did not need to be updated!")
-	}
+// 		//writes http response body to temp file
+// 		_, err = io.Copy(file, resp.Body)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		//closes initial file writing
+// 		file.Close()
+// 		//opens file again for decompression
+// 		gzipFile, err := os.Open("validIDs")
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		//creates a destination for uncompressed file
+// 		out, err := os.Create("Uncompressed.json")
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		defer os.Remove("Uncompressed.json")
+// 		//decompresses original file stream
+// 		reader, err := gzip.NewReader(gzipFile)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		_, err = io.Copy(out, reader)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		out.Close()
+// 		reader.Close()
+// 		//opens file again so that scanner will work
+// 		scannerFile, err := os.Open("Uncompressed.json")
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		defer scannerFile.Close()
+// 		//scans file line by line
+// 		fileScanner := bufio.NewScanner(scannerFile)
+// 		largest := 0
+// 		smallest := 4294967295
+// 		for fileScanner.Scan() {
+// 			var lineStruct parseStruct
+// 			//gets line of JSON file
+// 			binaryLine := fileScanner.Bytes()
+// 			//unmarshals binary into a struct
+// 			json.Unmarshal(binaryLine, &lineStruct)
+// 			if lineStruct.Id > largest {
+// 				largest = lineStruct.Id
+// 			}
+// 			if lineStruct.Id < smallest {
+// 				smallest = lineStruct.Id
+// 			}
+// 		}
+// 		//inserts these parameters into database
+// 		parameters.Largest = largest
+// 		parameters.Smallest = smallest
+// 		parameters.LastUpdated = time.Now()
+// 		database.FindOneAndReplace(context, filter, parameters)
+// 		fmt.Println("Largest: " + fmt.Sprint(largest))
+// 		fmt.Println("Smallest: " + fmt.Sprint(smallest))
+// 		fmt.Println("Database updated!")
+// 	} else {
+// 		fmt.Println("database did not need to be updated!")
+// 	}
 
-}
+// }
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(context *gin.Context) {
@@ -1127,7 +1126,7 @@ func CORSMiddleware() gin.HandlerFunc {
 
 func main() {
 	//Checks for database updates on startup
-	updateGeneratorParameters()
+	// updateGeneratorParameters()
 	client := connectToDB()
 	database := client.Database("GeneratorParameters").Collection("GeneratorParameters")
 	filter := bson.D{{}}

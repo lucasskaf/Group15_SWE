@@ -1,14 +1,7 @@
-import { HttpClient } from '@angular/common/http';
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Emmiters } from '../emitters/emmiters';
-import { LoginRegisterService } from '../services/login-register.service';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
-import {MatAutocompleteSelectedEvent} from '@angular/material/autocomplete';
-import { Observable, map, startWith } from 'rxjs';
-import {COMMA, ENTER} from '@angular/cdk/keycodes';
-import { MatChipInputEvent } from '@angular/material/chips';
-import { MatIconModule } from '@angular/material/icon'; 
-import {MatSliderModule} from '@angular/material/slider';
+import { MovieGeneratorService } from '../services/movie-generator.service';
+
 
 @Component({
   selector: 'app-home-page',
@@ -21,18 +14,10 @@ export class HomePageComponent implements OnInit {
   username = ""
   message = 'Home Page'
 
-  generatorForm
-
   constructor(
-    private formBuilder: FormBuilder
+    private movieGeneratorService: MovieGeneratorService
   ){
-    this.generatorForm = this.formBuilder.group({
-      actorCtrl: this.formBuilder.control(''),
-      genresCtrl: this.formBuilder.control(''),
-      ratingCtrl: this.formBuilder.control(''),
-      runtimeCtrl: this.formBuilder.control(''),
-      providerCtrl: this.formBuilder.control('')
-    })
+    
   }
 
   ngOnInit(): void {
@@ -69,15 +54,5 @@ export class HomePageComponent implements OnInit {
     // })
   }
 
-  onSubmit(generatorData){
-    console.log(generatorData)
-  }
-
-  formatLabel(value: number): string {
-    if(value % 60 == 0){
-      return (value / 60) + 'hrs'
-    }
-
-    return (Math.floor(value / 60)) + ':' + (value % 60)
-  }
+  
 }
