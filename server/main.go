@@ -191,6 +191,7 @@ func login(context *gin.Context) {
 	//sanitizes user profile before searching database
 	sanitizeUser(&credentials)
 	filter := bson.D{{Key: "username", Value: credentials.Username}, {Key: "password", Value: credentials.Password}}
+	filter := bson.D{{Key: "username", Value: credentials.Username}, {Key: "password", Value: credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
 	//database.Find(context, filter)
@@ -972,6 +973,7 @@ func getPosts(context *gin.Context) {
 	opts := options.Find().SetLimit(50).SetSort(bson.D{{"$natural", -1}}).SetSkip(int64(pageInt-1) * 50)
 	//database.FindOne(context, filter).Decode(&post)
 	cursor, err := database.Find(context, filter, opts)
+
 	//marshals every result into the array
 	var posts []Post
 	if err = cursor.All(context, &posts); err != nil {
