@@ -17,6 +17,6 @@
     </div>
 
     <div class="movie-container">
-        <app-movie *ngFor="let movie of movies" [movieItem]="movie"></app-movie>
+        <app-movie *ngFor="let movie of movies" [movieItem]="movie" (movieDelete)="onMovieDelete($event)"></app-movie>
     </div>
 </div>
