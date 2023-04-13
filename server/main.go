@@ -191,7 +191,6 @@ func login(context *gin.Context) {
 	//sanitizes user profile before searching database
 	sanitizeUser(&credentials)
 	filter := bson.D{{Key: "username", Value: credentials.Username}, {Key: "password", Value: credentials.Password}}
-	filter := bson.D{{Key: "username", Value: credentials.Username}, {Key: "password", Value: credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
 	//database.Find(context, filter)
@@ -669,7 +668,7 @@ func trueRandomMovie(context *gin.Context) {
 }
 
 func generateRandomNumber(smallest float64, largest float64, rng rand.Rand) int {
-	time.Sleep(7 * time.Microsecond)
+	time.Sleep(17 * time.Microsecond)
 	output := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
 	return output
 }
