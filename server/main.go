@@ -19,11 +19,13 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/joho/godotenv"
+	"github.com/microcosm-cc/bluemonday"
 	"go.mongodb.org/mongo-driver/bson"
 
 	//"go.mongodb.org/mongo-driver/bson/primitive"
@@ -58,12 +60,18 @@ type Movie struct {
 	Status              string   `json:"status,omitempty" validate:"oneof=rumored planned in_production post_production released canceled"` // The movie's production status.
 	Tagline             string   `json:"tagline,omitempty"`                                                                                 // The movie's tagline.
 	Title               string   `json:"title,omitempty"`                                                                                   // The movie's title.
-	VoteAverage         float64  `json:"vote_average,omitempty"`                                                                            // The average rating given to the movie by users.
+	VoteAverage         float64  `json:"vote_average"`                                                                                      // The average rating given to the movie by users.
 	VoteCount           int      `json:"vote_count,omitempty"`                                                                              // The number of user ratings given to the movie.
+	UserRating          float32  `json:"user_rating,omitempty"`
 }
 
-type results struct {
-	Results []Movie `json:"results"`
+type MovieResults struct {
+	Results    []Movie `json:"results"`
+	TotalPages int     `json:"total_pages"`
+}
+
+type ActorResults struct {
+	Results []Actor `json:"results"`
 }
 
 // struct for getting IDs from movie database
@@ -78,14 +86,15 @@ type parseStruct struct {
 
 // this is the user struct that contains all the different fields for a certain user
 type User struct {
-	Username      string   `json:"username"`
-	Password      string   `json:"password"`
-	Email         string   `json:"email"`
-	Watchlist     []Movie  `json:"watchlist"`
-	Posts         []Post   `json:"posts"`
-	Genres        []string `json:"genres"`
-	Rating        float32  `json:"rating"`
-	Subscriptions []string `json:"subscriptions"`
+	Username      string           `json:"username"`
+	Password      string           `json:"password"`
+	Email         string           `json:"email"`
+	Watchlist     []Movie          `json:"watchlist"`
+	Posts         []Post           `json:"posts"`
+	Genres        []string         `json:"genres"`
+	Rating        float32          `json:"rating"`
+	Subscriptions []string         `json:"subscriptions"`
+	ActiveFilters GeneratorFilters `json:"active_filters"`
 }
 
 type ForumComment struct {
@@ -101,6 +110,19 @@ type GeneratorParameters struct {
 	Smallest    int       `json:"smallest"`
 }
 
+type GeneratorFilters struct {
+	//Actors and genres have to be comma separated lists of IDs
+	Actors     []string `json:"actors"`
+	MaxRuntime int      `json:"max_runtime"`
+	Genres     []int    `json:"genres"`
+	MinRating  float32  `json:"min_rating"`
+	Providers  []int    `json:"streaming_providers"`
+}
+
+type Actor struct {
+	Id int `json:"id"`
+}
+
 // global generator parameters
 var largest float64
 var smallest float64
@@ -111,6 +133,7 @@ var localMode bool
 // this is the post struct that contains all the different fields for a certain post
 type Post struct {
 	PostID   primitive.ObjectID `json:"id"`
+	MovieID  string             `json:"movie_id"`
 	Username string             `json:"username"`
 	Title    string             `json:"title"`
 	Body     string             `json:"body"`
@@ -165,7 +188,8 @@ func login(context *gin.Context) {
 	if err := context.BindJSON(&credentials); err != nil {
 		fmt.Printf("Json binding failed")
 	}
-
+	//sanitizes user profile before searching database
+	sanitizeUser(&credentials)
 	filter := bson.D{{"username", credentials.Username}, {"password", credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
@@ -188,7 +212,7 @@ func login(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"token": token})
 
-	context.IndentedJSON(http.StatusOK, retrieved)
+	//context.IndentedJSON(http.StatusOK, retrieved)
 	fmt.Printf("login successful!")
 	client.Disconnect(context)
 }
@@ -203,10 +227,11 @@ func createUser(context *gin.Context) {
 		context.JSON(http.StatusAlreadyReported, gin.H{"error": "u r an idiot"})
 		return //catches null requests and throws error.
 	}
+
+	valid, errString := validateUser(&newUser)
 	//throws error if username or password are blank
-	if newUser.Username == "" || newUser.Password == "" {
-		var emptyStruct User
-		context.IndentedJSON(http.StatusBadRequest, emptyStruct)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errString})
 		client.Disconnect(context)
 		return
 	}
@@ -223,6 +248,60 @@ func createUser(context *gin.Context) {
 	database.InsertOne(context, newUser)
 	context.IndentedJSON(http.StatusOK, newUser)
 	client.Disconnect(context)
+}
+
+// checks if user meets certain conditions for account creation (put multiple return types in parentheses separated by commas)
+func validateUser(user *User) (bool, string) {
+	sanitizeUser(user)
+	error := ""
+	isValid := true
+	if user.Username == "" && user.Password == "" {
+		isValid = false
+		error = "username or password cannot be blank"
+		return isValid, error
+	}
+	userLen := len(user.Username)
+	passLen := len(user.Password)
+	if userLen < 4 || passLen < 4 {
+		error = "username and password must be at least 4 characters"
+		return isValid, error
+	}
+	if userLen > 50 || passLen > 50 {
+		isValid = false
+		error = "username or password must be less than 50 characters"
+		return isValid, error
+	}
+	return isValid, error
+}
+
+func sanitizeUser(user *User) {
+	//this policy strips all HTML tags from every part of the user class to prevent XSS attacks
+	p := bluemonday.StrictPolicy()
+	user.Email = p.Sanitize(user.Email)
+	user.Username = p.Sanitize(user.Username)
+	user.Password = p.Sanitize(user.Password)
+	for i, g := range user.Genres {
+		user.Genres[i] = p.Sanitize(g)
+	}
+	for _, m := range user.Watchlist {
+		sanitizeMovieFields(&m, p)
+	}
+	for i, s := range user.Subscriptions {
+		user.Subscriptions[i] = p.Sanitize(s)
+	}
+
+}
+
+// sanitizes the fields that the user is likely to know and input
+func sanitizeMovieFields(movie *Movie, policy *bluemonday.Policy) {
+	//policy can be passed in for greater efficiency, but function can still operate independently
+	if policy == nil {
+		policy = bluemonday.StrictPolicy()
+	}
+	movie.Title = policy.Sanitize(movie.Title)
+	for i, g := range movie.Genres {
+		movie.Genres[i] = policy.Sanitize(g)
+	}
 }
 
 func addToWatchlist(context *gin.Context) {
@@ -254,6 +333,10 @@ func addToWatchlist(context *gin.Context) {
 	if err := context.BindJSON(&movie); err != nil {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
+	}
+	sanitizeMovieFields(&movie, nil)
+	if movie.OriginalTitle == "" {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 	}
 	filter := bson.D{{"username", username}}
 	var updatedUser User
@@ -405,9 +488,145 @@ func updateUserInfo(context *gin.Context) {
 our API key: 010c2ddcdf323db029b6dca4cbfa49de
 As of 2/18/2022, the largest possible movie ID is 1088411, while the smallest possible movie ID is 2
 */
+
 func randomMovie(context *gin.Context) {
-	//rng uses current time as a seed
-	rng := rand.New(rand.NewSource(time.Now().Unix()))
+	appropriate := false
+	executions := 1
+	var randMovie Movie
+	for appropriate == false {
+		url := "https://api.themoviedb.org/3/movie/top_rated?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&page="
+		//should produce a random number from 1 to 1000
+		randPage := generateRandomNumber(1, 70)
+		url = url + fmt.Sprint(randPage)
+		resp, err := http.Get(url)
+		if err != nil {
+			panic(err)
+		}
+		var results MovieResults
+		binary, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		json.Unmarshal(binary, &results)
+		pageSize := len(results.Results)
+		executions := 0
+		randIndex := generateRandomNumber(0, float64(pageSize-1))
+		randMovie = results.Results[randIndex]
+		appropriate = filterMovies(&randMovie)
+		executions++
+	}
+	println(executions)
+	//returns an empty struct and an error if function failed to produce a random movie.
+	if randMovie.Title == "" {
+		context.IndentedJSON(http.StatusInternalServerError, randMovie)
+	} else {
+		context.IndentedJSON(http.StatusOK, randMovie)
+	}
+}
+
+func randomMovieWithFilters(context *gin.Context) {
+	var filters GeneratorFilters
+	filters.MaxRuntime = 4294967295
+	filters.MinRating = 0
+	context.BindJSON(&filters)
+	//first assembles actor IDs for query
+	var actorIDs []int
+	var ActorResults ActorResults
+
+	for i := 0; i < len(filters.Actors); i++ {
+		frontHalf := "https://api.themoviedb.org/3/search/person?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&query="
+		backHalf := "&page=1&include_adult=false"
+		requestString := frontHalf + url.QueryEscape(filters.Actors[i]) + backHalf
+		resp, err := http.Get(requestString)
+		if err != nil {
+			panic(err)
+		}
+		binary, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		json.Unmarshal(binary, &ActorResults)
+		//checks if requested actor exists
+		if len(ActorResults.Results) == 0 {
+			//context.IndentedJSON(http.StatusOK, gin.H{"error": "no results for actor " + filters.Actors[i]})
+			fmt.Printf("No resulst for actor" + filters.Actors[i])
+		} else {
+			actorIDs = append(actorIDs, ActorResults.Results[0].Id)
+		}
+	}
+	requestString := "https://api.themoviedb.org/3/discover/movie?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&include_adult=false&include_video=false&"
+	//adds the minimum rating
+	requestString += ("vote_average.gte=" + fmt.Sprintf("%f", filters.MinRating) + "&with_cast=")
+	//loop adds actors to request
+	for _, a := range actorIDs {
+		requestString += (strconv.Itoa(a) + ",")
+	}
+	requestString += "&with_genres="
+	//loop adds genres to request
+	for _, g := range filters.Genres {
+		requestString += (strconv.Itoa(g) + ",")
+	}
+	//specifies maximum runtime
+	requestString += ("&with_runtime.lte=" + strconv.Itoa(filters.MaxRuntime))
+	//adds streaming providers
+	requestString += "&with_watch_providers="
+	for _, p := range filters.Providers {
+		requestString += (strconv.Itoa(p) + ",")
+	}
+	resp, err := http.Get(requestString)
+	if err != nil {
+		panic(err)
+	}
+	binary, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	//makes request with full string
+	var resultPage MovieResults
+	resp, err = http.Get(requestString)
+	if err != nil {
+		panic(err)
+	}
+	binary, err = io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	json.Unmarshal(binary, &resultPage)
+	if len(resultPage.Results) == 0 {
+		context.IndentedJSON(http.StatusOK, gin.H{"error": "No results"})
+		return
+	} else {
+		//select a random page if there is more than one page of results
+		if resultPage.TotalPages > 1 {
+			//resets slice
+			resultPage.Results = nil
+			//continues to execute if there are no movies in the given page
+			for len(resultPage.Results) == 0 {
+				if resultPage.TotalPages > 500 {
+					resultPage.TotalPages = 500
+				}
+				randomPage := generateRandomNumber(1, float64(resultPage.TotalPages))
+				newRequestString := requestString + "&page=" + strconv.Itoa(randomPage)
+				resp, err := http.Get(newRequestString)
+				if err != nil {
+					panic(err)
+				}
+				binary, err := io.ReadAll(resp.Body)
+				if err != nil {
+					panic(err)
+				}
+				json.Unmarshal(binary, &resultPage)
+			}
+		}
+
+	}
+	index := generateRandomNumber(0, float64(len(resultPage.Results)-1))
+	result := resultPage.Results[index]
+	context.IndentedJSON(http.StatusOK, result)
+}
+
+func trueRandomMovie(context *gin.Context) {
 	frontHalf := "https://api.themoviedb.org/3/movie/"
 	backHalf := "?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US"
 	var resp *http.Response
@@ -420,7 +639,7 @@ func randomMovie(context *gin.Context) {
 	//first execution must take place outside of loop
 	//If invalid, makes requests until it gets an OK response
 	for !appropriate {
-		id := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
+		id := generateRandomNumber(smallest, largest)
 		requestString := frontHalf + fmt.Sprint(id) + backHalf
 		resp, err = http.Get(requestString)
 		if err != nil {
@@ -447,16 +666,32 @@ func randomMovie(context *gin.Context) {
 	context.JSON(http.StatusOK, movieData)
 }
 
-// function is designed to test RNG formula
 func generateRandomNumber(smallest float64, largest float64) int {
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
-	id := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
-	return id
+	output := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
+	return output
+}
+
+func analyzePopularPages() {
+	for i := 1; i <= 549; i++ {
+		var page MovieResults
+		resp, err := http.Get("https://api.themoviedb.org/3/movie/top_rated?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&page=" + fmt.Sprint(i))
+		if err != nil {
+			panic(err)
+		}
+		binary, _ := io.ReadAll(resp.Body)
+		json.Unmarshal(binary, &page)
+		println(len(page.Results))
+	}
 }
 
 func filterMovies(m *Movie) bool {
 	//checks if movie contains adult content
 	if m.Adult {
+		return false
+	}
+	//movie must have a rating above 0
+	if m.VoteAverage == 0 {
 		return false
 	}
 	//checks if movie is in English
@@ -478,7 +713,7 @@ func getSimilarMovies(context *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	var results results
+	var results MovieResults
 	json.Unmarshal(body, &results)
 	context.JSON(http.StatusOK, results)
 }
@@ -501,7 +736,6 @@ func createPost(context *gin.Context) {
 		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
 		return
 	}
-
 	// Using claims and the token, we get the username that has this token
 	claims, _ := userToken.Claims.(jwt.MapClaims)
 	username := claims["username"].(string)
@@ -514,16 +748,15 @@ func createPost(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return
 	}
-
+	valid, errorString := validatePost(&newPost)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errorString})
+		return
+	}
 	date := time.Now().Format("January 2, 2006")
 	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
-	result, err := postDatabase.InsertOne(context, bson.M{
-		"username": username,
-		"title":    newPost.Title,
-		"body":     newPost.Body,
-		"date":     date,
-	})
+	result, err := postDatabase.InsertOne(context, newPost)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
 		return
@@ -544,6 +777,31 @@ func createPost(context *gin.Context) {
 	context.JSON(http.StatusCreated, newPost)
 	// fmt.Println("Post successfuly created")
 	client.Disconnect(context)
+}
+
+func sanitizePost(post *Post) {
+	policy := bluemonday.NewPolicy()
+	policy.AllowStandardURLs()
+	policy.AllowRelativeURLs(true)
+	policy.AllowImages()
+	post.Title = policy.Sanitize(post.Title)
+	post.Body = policy.Sanitize(post.Body)
+}
+
+func validatePost(post *Post) (bool, string) {
+	valid := true
+	var error string
+	if post.Body == "" || post.Title == "" {
+		valid = false
+		error = "post title and body cannot be blank"
+		return valid, error
+	}
+	if len(post.Title) > 100 || len(post.Body) > 1000 {
+		valid = false
+		error = "post title or body is too long"
+		return valid, error
+	}
+	return valid, error
 }
 
 // this function deletes a post for the logged in user
@@ -639,7 +897,7 @@ func updatePost(context *gin.Context) {
 	username := claims["username"].(string)
 	client := connectToDB()
 
-	// Need to get the post that needs to be update
+	// Need to get the post that needs to be updated
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
 	filter := bson.M{"_id": objectID}
 	var currentPost Post
@@ -659,7 +917,11 @@ func updatePost(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Failed to the parse updated post from request body"})
 		return
 	}
-
+	valid, errorString := validatePost(&updatedPost)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errorString})
+		return
+	}
 	updatedPost.Date = time.Now().Format("January 2, 2006")
 	updateMade := bson.M{
 		"$set": bson.M{
@@ -691,6 +953,44 @@ func updatePost(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Post updated successfully"})
+	client.Disconnect(context)
+}
+
+func getPosts(context *gin.Context) {
+	id := context.Param("id")
+	page := context.Param("page")
+	//converts page number into an integer and handles invalid inputs
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		pageInt = 1
+	}
+	client := connectToDB()
+	database := client.Database("ForumPosts").Collection("ForumPosts")
+	filter := bson.D{{"movie_id", id}}
+	//have to set options to sort posts from most to least recent and limit the amount of retrievals
+	//opts := options.Find().SetLimit(int64(pageInt) * 50).SetSort(bson.D{{"$natural", -1}})
+	cursor, err := database.Find(context, filter)
+	if err == mongo.ErrNoDocuments {
+		context.IndentedJSON(http.StatusOK, gin.H{"error": "no posts found"})
+	}
+	//marshals every result into the array
+	var posts []Post
+	if err = cursor.All(context, &posts); err != nil {
+		panic(err)
+	}
+	if len(posts) < 50 {
+		context.IndentedJSON(http.StatusOK, posts)
+	} else {
+		lowerBound := (pageInt - 1) * 50
+		upperBound := pageInt * 50
+		//corrects for out of bounds page requests
+		if upperBound > len(posts) {
+			upperBound = len(posts)
+			lowerBound = upperBound - 50
+		}
+		posts = posts[lowerBound:upperBound]
+		context.IndentedJSON(http.StatusOK, posts)
+	}
 	client.Disconnect(context)
 }
 
@@ -767,75 +1067,80 @@ func updateGeneratorParameters() {
 			panic(err)
 		}
 		defer resp.Body.Close()
-
-		//creates temporary file for reading
-		file, err := os.Create("validIDs")
-		if err != nil {
-			panic(err)
-		}
-		//deletes file after scan is finished
-		defer os.Remove("validIDs")
-
-		//writes http response body to temp file
-		_, err = io.Copy(file, resp.Body)
-		if err != nil {
-			panic(err)
-		}
-		//closes initial file writing
-		file.Close()
-		//opens file again for decompression
-		gzipFile, err := os.Open("validIDs")
-		if err != nil {
-			panic(err)
-		}
-		//creates a destination for uncompressed file
-		out, err := os.Create("Uncompressed.json")
-		if err != nil {
-			panic(err)
-		}
-		defer os.Remove("Uncompressed.json")
-		//decompresses original file stream
-		reader, err := gzip.NewReader(gzipFile)
-		if err != nil {
-			panic(err)
-		}
-		_, err = io.Copy(out, reader)
-		if err != nil {
-			panic(err)
-		}
-		out.Close()
-		reader.Close()
-		//opens file again so that scanner will work
-		scannerFile, err := os.Open("Uncompressed.json")
-		if err != nil {
-			panic(err)
-		}
-		defer scannerFile.Close()
-		//scans file line by line
-		fileScanner := bufio.NewScanner(scannerFile)
-		largest := 0
-		smallest := 4294967295
-		for fileScanner.Scan() {
-			var lineStruct parseStruct
-			//gets line of JSON file
-			binaryLine := fileScanner.Bytes()
-			//unmarshals binary into a struct
-			json.Unmarshal(binaryLine, &lineStruct)
-			if lineStruct.Id > largest {
-				largest = lineStruct.Id
+		//checks to see if data dump has been published yet
+		if resp.StatusCode == 200 {
+			//creates temporary file for reading
+			file, err := os.Create("validIDs")
+			if err != nil {
+				panic(err)
 			}
-			if lineStruct.Id < smallest {
-				smallest = lineStruct.Id
+			//deletes file after scan is finished
+			defer os.Remove("validIDs")
+
+			//writes http response body to temp file
+			_, err = io.Copy(file, resp.Body)
+			if err != nil {
+				panic(err)
 			}
+			//closes initial file writing
+			file.Close()
+			//opens file again for decompression
+			gzipFile, err := os.Open("validIDs")
+			if err != nil {
+				panic(err)
+			}
+			//creates a destination for uncompressed file
+			out, err := os.Create("Uncompressed.json")
+			if err != nil {
+				panic(err)
+			}
+			defer os.Remove("Uncompressed.json")
+			//decompresses original file stream
+			reader, err := gzip.NewReader(gzipFile)
+			if err != nil {
+				panic(err)
+			}
+			_, err = io.Copy(out, reader)
+			if err != nil {
+				panic(err)
+			}
+			out.Close()
+			reader.Close()
+			//opens file again so that scanner will work
+			scannerFile, err := os.Open("Uncompressed.json")
+			if err != nil {
+				panic(err)
+			}
+			defer scannerFile.Close()
+			//scans file line by line
+			fileScanner := bufio.NewScanner(scannerFile)
+			largest := 0
+			smallest := 4294967295
+			for fileScanner.Scan() {
+				var lineStruct parseStruct
+				//gets line of JSON file
+				binaryLine := fileScanner.Bytes()
+				//unmarshals binary into a struct
+				json.Unmarshal(binaryLine, &lineStruct)
+				if lineStruct.Id > largest {
+					largest = lineStruct.Id
+				}
+				if lineStruct.Id < smallest {
+					smallest = lineStruct.Id
+				}
+			}
+
+			//inserts these parameters into database
+			parameters.Largest = largest
+			parameters.Smallest = smallest
+			parameters.LastUpdated = time.Now()
+			database.FindOneAndReplace(context, filter, parameters)
+			fmt.Println("Largest: " + fmt.Sprint(largest))
+			fmt.Println("Smallest: " + fmt.Sprint(smallest))
+			fmt.Println("Database updated!")
+		} else {
+			fmt.Println("no update to download!")
 		}
-		//inserts these parameters into database
-		parameters.Largest = largest
-		parameters.Smallest = smallest
-		parameters.LastUpdated = time.Now()
-		database.FindOneAndReplace(context, filter, parameters)
-		fmt.Println("Largest: " + fmt.Sprint(largest))
-		fmt.Println("Smallest: " + fmt.Sprint(smallest))
-		fmt.Println("Database updated!")
 	} else {
 		fmt.Println("database did not need to be updated!")
 	}
@@ -867,18 +1172,20 @@ func main() {
 	database.FindOne(context.Background(), filter).Decode(&parameters)
 	largest = float64(parameters.Largest)
 	smallest = float64(parameters.Smallest)
+	client.Disconnect(context.Background())
 	localMode = false
 	//Uncomment out to speed up unit tests by deleting debug message
 	os.Setenv("GIN_MODE", "release")
 	gin.SetMode(gin.ReleaseMode)
 	//Sets up routing
-
 	router := gin.Default()
 	router.Use(CORSMiddleware())
 	router.GET("/login", login)
 	router.GET("/me", getUserInfo)
 	router.GET("/generate", randomMovie)
-	router.GET("/generate/:id/similar", getSimilarMovies)
+	router.GET("/generate/similar/:id", getSimilarMovies)
+	router.GET("/posts/:id/:page", getPosts)
+	router.POST("/generate/filters", randomMovieWithFilters)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
 	router.POST("/posts", createPost)
