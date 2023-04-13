@@ -14,49 +14,12 @@ export class HomePageComponent implements OnInit {
   isAuthenticated
   username = ""
   message = 'Home Page'
-  movieList: Movie[] = [
-    {
-      title: "Movie1",
-      release_date: "01-01-2023",
-      poster_path: "https://cdn.shopify.com/s/files/1/1057/4964/products/Avengers-Endgame-Vintage-Movie-Poster-Original-1-Sheet-27x41.jpg?v=1670821335",
-      user_rating: 10
-    },
-    {
-      title: "Movie2",
-      release_date: "01-01-2023",
-      poster_path: "https://cdn.shopify.com/s/files/1/1057/4964/products/Avengers-Endgame-Vintage-Movie-Poster-Original-1-Sheet-27x41.jpg?v=1670821335",
-      user_rating: 10
-    },
-    {
-      title: "Movie3",
-      release_date: "01-01-2023",
-      poster_path: "https://cdn.shopify.com/s/files/1/1057/4964/products/Avengers-Endgame-Vintage-Movie-Poster-Original-1-Sheet-27x41.jpg?v=1670821335",
-      user_rating: 10
-    },
-    {
-      title: "Movie4",
-      release_date: "01-01-2023",
-      poster_path: "https://cdn.shopify.com/s/files/1/1057/4964/products/Avengers-Endgame-Vintage-Movie-Poster-Original-1-Sheet-27x41.jpg?v=1670821335",
-      user_rating: 10
-    },
-    {
-      title: "Movie5",
-      release_date: "01-01-2023",
-      poster_path: "https://cdn.shopify.com/s/files/1/1057/4964/products/Avengers-Endgame-Vintage-Movie-Poster-Original-1-Sheet-27x41.jpg?v=1670821335",
-      user_rating: 10
-    },
-    {
-      title: "Movie6",
-      release_date: "01-01-2023",
-      poster_path: "https://cdn.shopify.com/s/files/1/1057/4964/products/Avengers-Endgame-Vintage-Movie-Poster-Original-1-Sheet-27x41.jpg?v=1670821335",
-      user_rating: 10
-    }
-  ]
+  movieList: Movie[] = []
 
   constructor(
     private movieGeneratorService: MovieGeneratorService
   ){
-    
+    // this.getMovie(8)
   }
 
   ngOnInit(): void {
@@ -93,5 +56,24 @@ export class HomePageComponent implements OnInit {
     // })
   }
 
+  // getMovie(numberOfMovies: number) {
+  //   for(let i = 0; i < numberOfMovies; i++){
+  //     this.movieGeneratorService.getRandomMovie()
+  //     // .subscribe(
+  //     //   {
+  //     //     next: (resp) => {
+  //     //       console.log(i)
+  //     //       console.log(resp)
+  //     //       resp.poster_path = `https://image.tmdb.org/t/p/original${resp.poster_path}`
+
+  //     //       this.movieList.push(resp)
+  //     //     },
+  //     //     error: (err) => {
+  //     //       console.log('ERROR GENERATING MOVIES')
+  //     //     }
+  //     //   }
+  //     // )
+  //   }
+  // }
   
 }

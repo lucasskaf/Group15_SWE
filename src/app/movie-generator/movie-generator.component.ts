@@ -18,14 +18,14 @@ export class MovieGeneratorComponent {
     this.generatorForm = this.formBuilder.group({
       actors: this.formBuilder.control(''),
       genres: this.formBuilder.control(''),
-      // ratingCtrl: this.formBuilder.control(''),
+      min_rating: this.formBuilder.control(''),
       max_runtime: this.formBuilder.control(''),
       streaming_providers: this.formBuilder.control('')
     })
   }
 
   getGeneratedMovie(filters){
-    this.movieGeneratorService.getRandomMovie(filters).subscribe(
+    this.movieGeneratorService.getRandomMovieWithFilters(filters).subscribe(
       {
         next: (respMovie) => {
           console.log(respMovie)

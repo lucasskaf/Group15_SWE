@@ -19,6 +19,7 @@ import { MatSelectModule } from '@angular/material/select'
 import { MatSliderModule } from '@angular/material/slider'
 import {MatInputModule} from '@angular/material/input';
 import { CarouselModule } from 'primeng/carousel'
+import { RatingModule } from 'primeng/rating';
 
 @NgModule({
   declarations: [
@@ -45,6 +46,7 @@ import { CarouselModule } from 'primeng/carousel'
     FormsModule,
     MatInputModule,
     CarouselModule,
+    RatingModule
   ],
   providers: [],
   bootstrap: [AppComponent]

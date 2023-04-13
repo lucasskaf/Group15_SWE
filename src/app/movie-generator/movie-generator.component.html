@@ -8,7 +8,7 @@
     <form [formGroup]="generatorForm" (ngSubmit)="onSubmit(generatorForm.value)" action="">
         <mat-form-field class="mat-form" color="primary" appearance="outline">
                 <mat-label>Actors</mat-label>
-                <input matInput placeholder="Test" value="test1" formControlName="actors">
+                <input matInput placeholder="Actor's Names (separated by commas)" value="test1" formControlName="actors">
         </mat-form-field>
         <mat-form-field class="mat-form" color="primary" appearance="outline">
             <mat-label>Genres</mat-label>
@@ -21,16 +21,6 @@
                 <mat-option [value]="878">878</mat-option>
             </mat-select>
         </mat-form-field>
-        <!-- <mat-form-field class="mat-form" color="primary" appearance="outline">
-            <mat-label>Minimum Rating</mat-label>
-            <mat-select formControlName="ratingCtrl">
-                <mat-option [value]="5">★★★★★</mat-option>
-                <mat-option [value]="4">★★★★☆</mat-option>
-                <mat-option [value]="3">★★★☆☆</mat-option>
-                <mat-option [value]="2">★★☆☆☆</mat-option>
-                <mat-option [value]="1">★☆☆☆☆</mat-option>
-            </mat-select>
-        </mat-form-field> -->
         <mat-form-field class="mat-form" color="primary" appearance="outline">
             <mat-label>Streaming Provider</mat-label>
             <mat-select multiple formControlName="streaming_providers">
@@ -41,6 +31,8 @@
                 <mat-option [value]="8">Netflix</mat-option>
             </mat-select>
         </mat-form-field>
+        <mat-label id="rating-label">Minimum Rating</mat-label>
+        <p-rating id="rating-input" formControlName="min_rating" [cancel]="false"></p-rating>
         <mat-label>Maximum Runtime</mat-label>
         <mat-slider class="mat-form" min="0" max="420" step="10" showTickMarks discrete [displayWith]="formatLabel">
             <input matSliderThumb formControlName="max_runtime">

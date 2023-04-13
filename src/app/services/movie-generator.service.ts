@@ -19,7 +19,11 @@ export class MovieGeneratorService {
 
   serverURL : string = 'http://localhost:8080'
 
-  getRandomMovie(filters : movieFilters) {
+  getRandomMovieWithFilters(filters : movieFilters) {
     return this.httpClient.post<Movie>(`${this.serverURL}/generate/filters`, filters)
+  }
+
+  getRandomMovie() {
+    return this.httpClient.get<Movie>(`${this.serverURL}/generate`)
   }
 }
