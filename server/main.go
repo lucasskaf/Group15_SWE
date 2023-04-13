@@ -491,12 +491,12 @@ As of 2/18/2022, the largest possible movie ID is 1088411, while the smallest po
 
 func randomMovie(context *gin.Context) {
 	appropriate := false
-	executions := 1
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var randMovie Movie
 	for appropriate == false {
 		url := "https://api.themoviedb.org/3/movie/top_rated?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&page="
-		//should produce a random number from 1 to 1000
-		randPage := generateRandomNumber(1, 70)
+		//should produce a random number from 1 to 100
+		randPage := generateRandomNumber(1, 150, *rng)
 		url = url + fmt.Sprint(randPage)
 		resp, err := http.Get(url)
 		if err != nil {
@@ -510,12 +510,11 @@ func randomMovie(context *gin.Context) {
 		json.Unmarshal(binary, &results)
 		pageSize := len(results.Results)
 		executions := 0
-		randIndex := generateRandomNumber(0, float64(pageSize-1))
+		randIndex := generateRandomNumber(0, float64(pageSize-1), *rng)
 		randMovie = results.Results[randIndex]
 		appropriate = filterMovies(&randMovie)
 		executions++
 	}
-	println(executions)
 	//returns an empty struct and an error if function failed to produce a random movie.
 	if randMovie.Title == "" {
 		context.IndentedJSON(http.StatusInternalServerError, randMovie)
@@ -528,6 +527,7 @@ func randomMovieWithFilters(context *gin.Context) {
 	var filters GeneratorFilters
 	filters.MaxRuntime = 4294967295
 	filters.MinRating = 0
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	context.BindJSON(&filters)
 	//first assembles actor IDs for query
 	var actorIDs []int
@@ -606,7 +606,7 @@ func randomMovieWithFilters(context *gin.Context) {
 				if resultPage.TotalPages > 500 {
 					resultPage.TotalPages = 500
 				}
-				randomPage := generateRandomNumber(1, float64(resultPage.TotalPages))
+				randomPage := generateRandomNumber(1, float64(resultPage.TotalPages), *rng)
 				newRequestString := requestString + "&page=" + strconv.Itoa(randomPage)
 				resp, err := http.Get(newRequestString)
 				if err != nil {
@@ -621,7 +621,7 @@ func randomMovieWithFilters(context *gin.Context) {
 		}
 
 	}
-	index := generateRandomNumber(0, float64(len(resultPage.Results)-1))
+	index := generateRandomNumber(0, float64(len(resultPage.Results)-1), *rng)
 	result := resultPage.Results[index]
 	context.IndentedJSON(http.StatusOK, result)
 }
@@ -629,6 +629,7 @@ func randomMovieWithFilters(context *gin.Context) {
 func trueRandomMovie(context *gin.Context) {
 	frontHalf := "https://api.themoviedb.org/3/movie/"
 	backHalf := "?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US"
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var resp *http.Response
 	var err error
 	executions := 0
@@ -639,7 +640,7 @@ func trueRandomMovie(context *gin.Context) {
 	//first execution must take place outside of loop
 	//If invalid, makes requests until it gets an OK response
 	for !appropriate {
-		id := generateRandomNumber(smallest, largest)
+		id := generateRandomNumber(smallest, largest, *rng)
 		requestString := frontHalf + fmt.Sprint(id) + backHalf
 		resp, err = http.Get(requestString)
 		if err != nil {
@@ -660,14 +661,14 @@ func trueRandomMovie(context *gin.Context) {
 		executions++
 	}
 	//prints out number of subsequent requests made - for testing ONLY
-	fmt.Println(executions)
+	//fmt.Println(executions)
 	//converts the binary output intof a string for return
 	//takes the string and sends it back to frontend as JSON
 	context.JSON(http.StatusOK, movieData)
 }
 
-func generateRandomNumber(smallest float64, largest float64) int {
-	rng := rand.New(rand.NewSource(time.Now().Unix()))
+func generateRandomNumber(smallest float64, largest float64, rng rand.Rand) int {
+	time.Sleep(7 * time.Microsecond)
 	output := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
 	return output
 }
