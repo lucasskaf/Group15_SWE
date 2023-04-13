@@ -1,5 +1,79 @@
-button {
+* {
+    font-family: 'Montserrat', sans-serif;
+}
+
+#generator-icon {
+    width: 35px;
+    margin-right: 0.7vw;
+}
+
+#generator-title {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+h2 {
+    margin: 2vh 0;
+    font-size: 25px;
+}
+
+h2 span {
+    font-weight: 200;
+}
+
+#generator-box {
+    margin: 7vh 0;
+    position: absolute;
+    left: 20vw;
+
+
+    padding: 2vh 3vw;
+    width: 30%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    background-color: #FBFEF9;
+    box-shadow: 0px 0px 35px 5px rgba(0, 0, 0, 0.25);
+    border-radius: 39px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.mat-form {
+    width: 100%;
+    background-color: #FBFEF9;
+}
+
+form button {
     font-family: 'Montserrat', sans-serif;
     font-weight: 700;
-    font-size: 16px;
+    font-size: 18px;
+    margin: 15px 0;
+} 
+
+#rating-input {
+    margin-bottom: 20px;
+}
+
+#rating-label {
+    margin-bottom: 15px;
+}
+
+::ng-deep .p-rating .p-rating-icon.pi-star-fill {
+    color: #330C2F;
+}
+
+::ng-deep .p-rating:not(.p-disabled):not(.p-readonly) .p-rating-icon:hover {
+    color: #964c8f;
 }
