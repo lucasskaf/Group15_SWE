@@ -3,8 +3,11 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { Movie } from '../user-auth/user';
 import { map } from 'rxjs';
 
-interface MovieResponse {
-  movie : Movie
+interface movieFilters {
+  actors: string[],
+  max_runtime: number,
+  genres: number[],
+  streaming_providers: number[]
 }
 
 @Injectable({
@@ -16,9 +19,11 @@ export class MovieGeneratorService {
 
   serverURL : string = 'http://localhost:8080'
 
-  getMovie() {
-    return this.httpClient.get<MovieResponse>(`${this.serverURL}/generate`).pipe(map(response => {
-      return response.movie
-    }))
+  getRandomMovieWithFilters(filters : movieFilters) {
+    return this.httpClient.post<Movie>(`${this.serverURL}/generate/filters`, filters)
+  }
+
+  getRandomMovie() {
+    return this.httpClient.get<Movie>(`${this.serverURL}/generate`)
   }
 }
