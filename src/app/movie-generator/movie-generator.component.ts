@@ -12,6 +12,7 @@ export class MovieGeneratorComponent {
 
   generatorForm
   generatedMovie: Movie = {}
+  isPopupOpen
 
   constructor(private movieGeneratorService : MovieGeneratorService,
     private formBuilder: FormBuilder) {
@@ -29,6 +30,8 @@ export class MovieGeneratorComponent {
       {
         next: (respMovie) => {
           console.log(respMovie)
+          this.generatedMovie = respMovie
+          this.showMovie()
         },
         error: (err) => {
           console.log(err)
@@ -37,12 +40,33 @@ export class MovieGeneratorComponent {
     )
   }
 
+  showMovie() {
+    this.isPopupOpen = true
+  }
+
   onSubmit(generatorData){
-    console.log(generatorData)
-    generatorData.actors = generatorData.actors.toLowerCase()
+    console.log(`BFORE: ${generatorData}`)
+
+    // Text process
+    if(generatorData.actors){
+      generatorData.actors = generatorData.actors.toLowerCase()
+    }
+    
     let actors_array = generatorData.actors.split(', ')
     
     generatorData.actors = actors_array
+
+    //Rating & Runtime process
+    if(generatorData.min_rating) {
+      generatorData.min_rating = (parseFloat(generatorData.min_rating) * 2.0)
+    }
+
+    if(generatorData.max_runtime) {
+      generatorData.max_runtime = parseInt(generatorData.max_runtime)
+    }
+
+    console.log(`AFTER: ${generatorData}`)
+
     this.getGeneratedMovie(generatorData)
   }
 

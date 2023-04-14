@@ -2,6 +2,10 @@
     font-family: 'Montserrat', sans-serif;
 }
 
+img {
+    width: 100px;
+}
+
 #generator-icon {
     width: 35px;
     margin-right: 0.7vw;
