@@ -1,7 +1,7 @@
-<div [ngClass]="{'modal-bg': true, 'closed': isOpen === false}">
-  <div [ngClass]="{'container': true, 'closed': isOpen === false}" id="container">
+<div [ngClass]="{'modal-bg': true, 'closed': isLoginOpen === false}">
+  <div [ngClass]="{'container': true, 'closed': isLoginOpen=== false}" id="container">
     <button
-      (click)="toogleLogin()"
+      (click)="closeLogin()"
       id="closeButton"
       mat-icon-button
       aria-label="Example icon button with a vertical three dot icon"
@@ -42,3 +42,4 @@
     </div>
   </div>  
 </div>
+<lib-ng-toast></lib-ng-toast>

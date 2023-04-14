@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"io"
@@ -14,7 +15,7 @@ import (
 	//"gorm.io/gorm"
 
 	//"compress/gzip"
-	"compress/gzip"
+
 	"fmt"
 	"log"
 	"math/rand"
@@ -36,6 +37,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/gin-contrib/cors"
 )
 
 // this is the movie struct that contains all the different fields for a movie
@@ -210,11 +213,32 @@ func login(context *gin.Context) {
 		panic(err)
 	}
 
-	context.JSON(http.StatusOK, gin.H{"token": token})
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Expires:  time.Now().Add(time.Hour * 24),
+		HttpOnly: true,
+	}
+	http.SetCookie(context.Writer, cookie)
 
-	//context.IndentedJSON(http.StatusOK, retrieved)
+	// context.JSON(http.StatusOK, gin.H{"token": token, "user_data": retrieved})
+	context.JSON(http.StatusOK, gin.H{"message": cookie})
+
 	fmt.Printf("login successful!")
-	client.Disconnect(context)
+	// client.Disconnect(context)
+}
+
+func logout(context *gin.Context) {
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		HttpOnly: true,
+	}
+
+	http.SetCookie(context.Writer, cookie)
+
+	context.JSON(http.StatusOK, gin.H{"message": cookie})
 }
 
 // this function creates a brand new user and inserts it into the database
@@ -765,7 +789,6 @@ func createPost(context *gin.Context) {
 
 	newPost.PostID = result.InsertedID.(primitive.ObjectID)
 	newPost.Date = date
-	newPost.Username = username
 
 	userDatabase := client.Database("UserInfo").Collection("UserInfo")
 	filter := bson.M{"username": username}
@@ -776,7 +799,7 @@ func createPost(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusCreated, newPost)
-	// fmt.Println("Post successfuly created")
+	fmt.Println("Post successfuly created")
 	client.Disconnect(context)
 }
 
@@ -1002,8 +1025,8 @@ func getPosts(context *gin.Context) {
 }
 
 func getUserInfo(context *gin.Context) {
-	header := context.GetHeader("Authorization")
-	headerToken := strings.ReplaceAll(header, "Bearer ", "")
+	cookie, _ := context.Cookie("token")
+	headerToken := strings.ReplaceAll(cookie, "Bearer ", "")
 	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
@@ -1171,7 +1194,7 @@ func CORSMiddleware() gin.HandlerFunc {
 
 func main() {
 	//Checks for database updates on startup
-	updateGeneratorParameters()
+	// updateGeneratorParameters()
 	client := connectToDB()
 	database := client.Database("GeneratorParameters").Collection("GeneratorParameters")
 	filter := bson.D{{}}
@@ -1186,9 +1209,20 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	//Sets up routing
 	router := gin.Default()
-	router.Use(CORSMiddleware())
-	router.GET("/login", login)
-	router.GET("/me", getUserInfo)
+	// router.Use(CORSMiddleware())
+	router.Use(
+		cors.New(
+			cors.Config{
+				AllowOrigins:     []string{"http://localhost:4200", "http://localhost:4200/user"},
+				AllowMethods:     []string{"GET", "POST", "DELETE", "PUT"},
+				AllowHeaders:     []string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "accept", "origin", "Cache-Control"},
+				AllowCredentials: true,
+			},
+		),
+	)
+	router.POST("/login", login)
+	router.POST("/logout", logout)
+	router.GET("/user", getUserInfo)
 	router.GET("/generate", randomMovie)
 	router.GET("/generate/similar/:id", getSimilarMovies)
 	router.GET("/posts/:id/:page", getPosts)
@@ -1197,7 +1231,6 @@ func main() {
 	router.POST("/:username/add", addToWatchlist)
 	router.POST("/posts", createPost)
 	router.DELETE("/posts/:postID", deletePost)
-	router.PUT("/posts/:postID", updatePost)
 	router.PUT("/:username/update", updateUserInfo)
 	router.DELETE("/:username/delete", removeUser)
 	router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
