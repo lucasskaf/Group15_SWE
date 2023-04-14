@@ -482,6 +482,7 @@ func updateUserInfo(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
 	}
+	sanitizeUser(&updatedUser)
 	//checks for blank username and password
 	if updatedUser.Username == "" || updatedUser.Password == "" {
 		context.IndentedJSON(http.StatusBadRequest, updatedUser)
@@ -573,7 +574,7 @@ func randomMovieWithFilters(context *gin.Context) {
 		//checks if requested actor exists
 		if len(ActorResults.Results) == 0 {
 			//context.IndentedJSON(http.StatusOK, gin.H{"error": "no results for actor " + filters.Actors[i]})
-			fmt.Printf("No resulst for actor" + filters.Actors[i])
+			fmt.Printf("No results for actor" + filters.Actors[i])
 		} else {
 			actorIDs = append(actorIDs, ActorResults.Results[0].Id)
 		}
@@ -588,15 +589,17 @@ func randomMovieWithFilters(context *gin.Context) {
 	requestString += "&with_genres="
 	//loop adds genres to request
 	for _, g := range filters.Genres {
-		requestString += (strconv.Itoa(g) + ",")
+		requestString += (strconv.Itoa(g) + "|")
 	}
 	//specifies maximum runtime
 	requestString += ("&with_runtime.lte=" + strconv.Itoa(filters.MaxRuntime))
 	//adds streaming providers
 	requestString += "&with_watch_providers="
 	for _, p := range filters.Providers {
-		requestString += (strconv.Itoa(p) + ",")
+		requestString += (strconv.Itoa(p) + "|")
 	}
+	//needs region flag to filter providers properly
+	requestString += "&watch_region=US"
 	resp, err := http.Get(requestString)
 	if err != nil {
 		panic(err)
