@@ -36,6 +36,7 @@
     background-color: bisque;
     padding: 35px 0 10px 0;
     width: 325px;
+    height: 550px;
 
     border-radius: 30px;
 }
@@ -47,6 +48,7 @@
 
 .movie-details {
     text-align: center;
+    width: 250px;
 }
 
 .movie-details #movie-title {
