@@ -1,8 +1,8 @@
-<p-dialog header="This is your movie!" [visible]="isPopupOpen" [style]="{width: '50vw'}" [modal]="true" [closable]="true" [closeOnEscape]="true">
-    <img src="https://image.tmdb.org/t/p/original{{generatedMovie.poster_path}}" alt="Movie Poster">
-    <p>
-        Lorem ipsum, dolor sit amet consectetur adipisicing elit. Quidem tempora perferendis culpa facere enim nam in ex consectetur atque quod, accusamus libero esse ipsa reprehenderit doloremque molestias, alias distinctio aut?
-    </p>
+<p-dialog header="{{generatedMovie.title}}" [visible]="isPopupOpen" [style]="{width: '60vw'}" [modal]="true" [closable]="false" [closeOnEscape]="true">
+    <div id="d-content">
+        <img src="https://image.tmdb.org/t/p/original{{generatedMovie.poster_path}}" alt="Movie Poster">
+        <button type="button" pButton label="Back" icon="pi pi-arrow-left" (click)="isPopupOpen = false" class="p-g-button"></button>
+    </div>
 </p-dialog>
 <div id="generator-box">
     <div id="generator-title">

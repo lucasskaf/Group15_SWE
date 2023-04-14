@@ -24,6 +24,6 @@ export class MovieGeneratorService {
   }
 
   getRandomMovie() {
-    return this.httpClient.get<Movie>(`${this.serverURL}/generate`)
+    return this.httpClient.get<Movie[]>(`${this.serverURL}/generate`)
   }
 }

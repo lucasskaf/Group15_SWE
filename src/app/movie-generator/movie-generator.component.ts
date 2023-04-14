@@ -12,7 +12,7 @@ export class MovieGeneratorComponent {
 
   generatorForm
   generatedMovie: Movie = {}
-  isPopupOpen
+  isPopupOpen: boolean = false
 
   constructor(private movieGeneratorService : MovieGeneratorService,
     private formBuilder: FormBuilder) {
@@ -42,6 +42,11 @@ export class MovieGeneratorComponent {
 
   showMovie() {
     this.isPopupOpen = true
+  }
+
+  closeMovie() {
+    console.log('CLICKED ON CLOSE')
+    this.isPopupOpen = false
   }
 
   onSubmit(generatorData){
