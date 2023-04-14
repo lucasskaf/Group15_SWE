@@ -514,7 +514,7 @@ our API key: 010c2ddcdf323db029b6dca4cbfa49de
 As of 2/18/2022, the largest possible movie ID is 1088411, while the smallest possible movie ID is 2
 */
 
-func randomMovie(context *gin.Context) {
+func randomMovie(context *gin.Context) Movie {
 	appropriate := false
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var randMovie Movie
@@ -543,9 +543,19 @@ func randomMovie(context *gin.Context) {
 	//returns an empty struct and an error if function failed to produce a random movie.
 	if randMovie.Title == "" {
 		context.IndentedJSON(http.StatusInternalServerError, randMovie)
+		return randMovie
 	} else {
-		context.IndentedJSON(http.StatusOK, randMovie)
+		// context.IndentedJSON(http.StatusOK, randMovie)
+		return randMovie
 	}
+}
+
+func getRandomMoviesList(context *gin.Context) {
+	var movieList [8]Movie
+	for i := 0; i < 8; i++ {
+		movieList[i] = randomMovie(context)
+	}
+	context.IndentedJSON(http.StatusOK, movieList)
 }
 
 func randomMovieWithFilters(context *gin.Context) {
@@ -1226,7 +1236,7 @@ func main() {
 	router.POST("/login", login)
 	router.POST("/logout", logout)
 	router.GET("/user", getUserInfo)
-	router.GET("/generate", randomMovie)
+	router.GET("/generate", getRandomMoviesList)
 	router.GET("/generate/similar/:id", getSimilarMovies)
 	router.GET("/posts/:id/:page", getPosts)
 	router.POST("/generate/filters", randomMovieWithFilters)
