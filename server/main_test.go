@@ -460,7 +460,7 @@ func TestRandomMovieWithFilters(t *testing.T) {
 	}
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var noResults []GeneratorFilters
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 200; i++ {
 		recorder := httptest.NewRecorder()
 		mock, _ := gin.CreateTestContext(recorder)
 		//determines number of genres and services
@@ -468,6 +468,7 @@ func TestRandomMovieWithFilters(t *testing.T) {
 		serviceNumber := generateRandomNumber(0, 9.0, *rng)
 		genreNumber := generateRandomNumber(0, 3, *rng)
 		min_rating := rng.Float32() * 10
+		min_rating = float32(int(min_rating*100)) / 100
 		max_runtime := generateRandomNumber(60, 300, *rng)
 		var actors []string
 		var streaming_providers []int
