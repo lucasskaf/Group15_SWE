@@ -39,11 +39,11 @@ p span {
     background-color: #330C2F;
 }
 
-#movie-icon, #login-icon {
+#movie-icon, #login-icon, #profile-icon {
     margin-right: 10px;
 }
 
-.nav-bar .bb-button#movies-button {
+.nav-bar .bb-button#movies-button,  .nav-bar .bb-button#profile-button{
     margin-right: 35px;
 }
 

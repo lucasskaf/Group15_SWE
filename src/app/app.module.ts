@@ -9,7 +9,16 @@ import { NavBarComponent } from './nav-bar/nav-bar.component';
 import { UserAuthModule } from './user-auth/user-auth.module';
 import { HomePageComponent } from './home-page/home-page.component';
 import { MatIconModule } from '@angular/material/icon'
-import { routing } from './app-routing.module';
+import { NgToastModule } from 'ng-angular-popup';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatSelectModule } from '@angular/material/select'
+import { MatSliderModule } from '@angular/material/slider'
+import {MatInputModule} from '@angular/material/input';
+import { CarouselModule } from 'primeng/carousel'
+import { RatingModule } from 'primeng/rating';
 
 @NgModule({
   declarations: [
@@ -25,7 +34,17 @@ import { routing } from './app-routing.module';
     ProfilePageModule,
     BrowserAnimationsModule,
     MatIconModule,
-    routing
+    MatFormFieldModule,
+    NgToastModule,
+    ReactiveFormsModule,
+    MatChipsModule,
+    MatAutocompleteModule,
+    MatSelectModule,
+    MatSliderModule,
+    FormsModule,
+    MatInputModule,
+    CarouselModule,
+    RatingModule
   ],
   providers: [],
   bootstrap: [AppComponent]

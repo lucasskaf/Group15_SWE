@@ -10,8 +10,6 @@ import { NavBarService } from '../services/nav-bar.service';
   styleUrls: ['./nav-bar.component.css']
 })
 export class NavBarComponent {
-  @Output() openLogin = new EventEmitter()
-  @Input() loginStatus : boolean = false
   authethicated = false
   username = ""
 
@@ -28,16 +26,15 @@ export class NavBarComponent {
     )
     Emmiters.userData.subscribe(
       {
-        next: (usernameResponse : string) => {
-          this.username = usernameResponse
+        next: (username : string) => {
+          this.username = username
         }
       }
     )
   }
 
   onLoginClick() {
-    this.openLogin.emit(!this.loginStatus)
-    this.loginStatus = !this.loginStatus
+    Emmiters.isLoginOpen.emit(true)
   }
 
   onLogout() {

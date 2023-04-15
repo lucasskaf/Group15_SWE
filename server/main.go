@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"io"
@@ -14,7 +15,7 @@ import (
 	//"gorm.io/gorm"
 
 	//"compress/gzip"
-	"compress/gzip"
+
 	"fmt"
 	"log"
 	"math/rand"
@@ -36,6 +37,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/gin-contrib/cors"
 )
 
 // this is the movie struct that contains all the different fields for a movie
@@ -190,7 +193,7 @@ func login(context *gin.Context) {
 	}
 	//sanitizes user profile before searching database
 	sanitizeUser(&credentials)
-	filter := bson.D{{"username", credentials.Username}, {"password", credentials.Password}}
+	filter := bson.D{{Key: "username", Value: credentials.Username}, {Key: "password", Value: credentials.Password}}
 	var retrieved User
 	err := database.FindOne(context, filter).Decode(&retrieved)
 	//database.Find(context, filter)
@@ -210,11 +213,32 @@ func login(context *gin.Context) {
 		panic(err)
 	}
 
-	context.JSON(http.StatusOK, gin.H{"token": token})
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Expires:  time.Now().Add(time.Hour * 24),
+		HttpOnly: true,
+	}
+	http.SetCookie(context.Writer, cookie)
 
-	//context.IndentedJSON(http.StatusOK, retrieved)
+	// context.JSON(http.StatusOK, gin.H{"token": token, "user_data": retrieved})
+	context.JSON(http.StatusOK, gin.H{"message": cookie})
+
 	fmt.Printf("login successful!")
-	client.Disconnect(context)
+	// client.Disconnect(context)
+}
+
+func logout(context *gin.Context) {
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		HttpOnly: true,
+	}
+
+	http.SetCookie(context.Writer, cookie)
+
+	context.JSON(http.StatusOK, gin.H{"message": cookie})
 }
 
 // this function creates a brand new user and inserts it into the database
@@ -238,7 +262,7 @@ func createUser(context *gin.Context) {
 
 	//checks for duplicate username
 	var duplicate User
-	filter := bson.D{{"username", newUser.Username}}
+	filter := bson.D{{Key: "username", Value: newUser.Username}}
 	err := database.FindOne(context, filter).Decode(&duplicate)
 	if err != mongo.ErrNoDocuments {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Username is taken"})
@@ -338,7 +362,7 @@ func addToWatchlist(context *gin.Context) {
 	if movie.OriginalTitle == "" {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 	}
-	filter := bson.D{{"username", username}}
+	filter := bson.D{{Key: "username", Value: username}}
 	var updatedUser User
 	database.FindOne(context, filter).Decode(&updatedUser)
 	updatedUser.Watchlist = append(updatedUser.Watchlist, movie)
@@ -382,7 +406,7 @@ func removeFromWatchlist(context *gin.Context) {
 		return //catches null requests and throws error.
 	}
 	//filter := bson.D{{"username.watchlist", movie.Title}}
-	filter := bson.D{{"username", username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
+	filter := bson.D{{Key: "username", Value: username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
 	result := database.FindOneAndDelete(context, filter)
 	//returns error if deletion fails
 	if result == nil {
@@ -417,7 +441,7 @@ func removeUser(context *gin.Context) {
 	username := claims["username"].(string)
 	client := connectToDB()
 	database := client.Database("UserInfo").Collection("UserInfo")
-	filter := bson.D{{"username", username}}
+	filter := bson.D{{Key: "username", Value: username}}
 	result := database.FindOneAndDelete(context, filter)
 	//returns error if user doesn't exist
 	if result == nil {
@@ -458,6 +482,7 @@ func updateUserInfo(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
 	}
+	sanitizeUser(&updatedUser)
 	//checks for blank username and password
 	if updatedUser.Username == "" || updatedUser.Password == "" {
 		context.IndentedJSON(http.StatusBadRequest, updatedUser)
@@ -465,8 +490,8 @@ func updateUserInfo(context *gin.Context) {
 		return
 	}
 
-	duplicateFilter := bson.D{{"username", updatedUser.Username}}
-	updateFilter := bson.D{{"username", username}}
+	duplicateFilter := bson.D{{Key: "username", Value: updatedUser.Username}}
+	updateFilter := bson.D{{Key: "username", Value: username}}
 
 	//checks whether desired username already exists
 	error := database.FindOne(context, duplicateFilter).Decode(&currProfile)
@@ -491,12 +516,12 @@ As of 2/18/2022, the largest possible movie ID is 1088411, while the smallest po
 
 func randomMovie(context *gin.Context) {
 	appropriate := false
-	executions := 1
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var randMovie Movie
 	for appropriate == false {
 		url := "https://api.themoviedb.org/3/movie/top_rated?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&page="
-		//should produce a random number from 1 to 1000
-		randPage := generateRandomNumber(1, 70)
+		//should produce a random number from 1 to 100
+		randPage := generateRandomNumber(1, 150, *rng)
 		url = url + fmt.Sprint(randPage)
 		resp, err := http.Get(url)
 		if err != nil {
@@ -510,12 +535,11 @@ func randomMovie(context *gin.Context) {
 		json.Unmarshal(binary, &results)
 		pageSize := len(results.Results)
 		executions := 0
-		randIndex := generateRandomNumber(0, float64(pageSize-1))
+		randIndex := generateRandomNumber(0, float64(pageSize-1), *rng)
 		randMovie = results.Results[randIndex]
 		appropriate = filterMovies(&randMovie)
 		executions++
 	}
-	println(executions)
 	//returns an empty struct and an error if function failed to produce a random movie.
 	if randMovie.Title == "" {
 		context.IndentedJSON(http.StatusInternalServerError, randMovie)
@@ -528,6 +552,7 @@ func randomMovieWithFilters(context *gin.Context) {
 	var filters GeneratorFilters
 	filters.MaxRuntime = 4294967295
 	filters.MinRating = 0
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	context.BindJSON(&filters)
 	//first assembles actor IDs for query
 	var actorIDs []int
@@ -549,7 +574,7 @@ func randomMovieWithFilters(context *gin.Context) {
 		//checks if requested actor exists
 		if len(ActorResults.Results) == 0 {
 			//context.IndentedJSON(http.StatusOK, gin.H{"error": "no results for actor " + filters.Actors[i]})
-			fmt.Printf("No resulst for actor" + filters.Actors[i])
+			fmt.Printf("No results for actor" + filters.Actors[i])
 		} else {
 			actorIDs = append(actorIDs, ActorResults.Results[0].Id)
 		}
@@ -564,15 +589,17 @@ func randomMovieWithFilters(context *gin.Context) {
 	requestString += "&with_genres="
 	//loop adds genres to request
 	for _, g := range filters.Genres {
-		requestString += (strconv.Itoa(g) + ",")
+		requestString += (strconv.Itoa(g) + "|")
 	}
 	//specifies maximum runtime
 	requestString += ("&with_runtime.lte=" + strconv.Itoa(filters.MaxRuntime))
 	//adds streaming providers
 	requestString += "&with_watch_providers="
 	for _, p := range filters.Providers {
-		requestString += (strconv.Itoa(p) + ",")
+		requestString += (strconv.Itoa(p) + "|")
 	}
+	//needs region flag to filter providers properly
+	requestString += "&watch_region=US"
 	resp, err := http.Get(requestString)
 	if err != nil {
 		panic(err)
@@ -606,7 +633,7 @@ func randomMovieWithFilters(context *gin.Context) {
 				if resultPage.TotalPages > 500 {
 					resultPage.TotalPages = 500
 				}
-				randomPage := generateRandomNumber(1, float64(resultPage.TotalPages))
+				randomPage := generateRandomNumber(1, float64(resultPage.TotalPages), *rng)
 				newRequestString := requestString + "&page=" + strconv.Itoa(randomPage)
 				resp, err := http.Get(newRequestString)
 				if err != nil {
@@ -621,7 +648,7 @@ func randomMovieWithFilters(context *gin.Context) {
 		}
 
 	}
-	index := generateRandomNumber(0, float64(len(resultPage.Results)-1))
+	index := generateRandomNumber(0, float64(len(resultPage.Results)-1), *rng)
 	result := resultPage.Results[index]
 	context.IndentedJSON(http.StatusOK, result)
 }
@@ -629,6 +656,7 @@ func randomMovieWithFilters(context *gin.Context) {
 func trueRandomMovie(context *gin.Context) {
 	frontHalf := "https://api.themoviedb.org/3/movie/"
 	backHalf := "?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US"
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var resp *http.Response
 	var err error
 	executions := 0
@@ -639,7 +667,7 @@ func trueRandomMovie(context *gin.Context) {
 	//first execution must take place outside of loop
 	//If invalid, makes requests until it gets an OK response
 	for !appropriate {
-		id := generateRandomNumber(smallest, largest)
+		id := generateRandomNumber(smallest, largest, *rng)
 		requestString := frontHalf + fmt.Sprint(id) + backHalf
 		resp, err = http.Get(requestString)
 		if err != nil {
@@ -660,14 +688,14 @@ func trueRandomMovie(context *gin.Context) {
 		executions++
 	}
 	//prints out number of subsequent requests made - for testing ONLY
-	fmt.Println(executions)
+	//fmt.Println(executions)
 	//converts the binary output intof a string for return
 	//takes the string and sends it back to frontend as JSON
 	context.JSON(http.StatusOK, movieData)
 }
 
-func generateRandomNumber(smallest float64, largest float64) int {
-	rng := rand.New(rand.NewSource(time.Now().Unix()))
+func generateRandomNumber(smallest float64, largest float64, rng rand.Rand) int {
+	time.Sleep(17 * time.Microsecond)
 	output := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
 	return output
 }
@@ -764,7 +792,6 @@ func createPost(context *gin.Context) {
 
 	newPost.PostID = result.InsertedID.(primitive.ObjectID)
 	newPost.Date = date
-	newPost.Username = username
 
 	userDatabase := client.Database("UserInfo").Collection("UserInfo")
 	filter := bson.M{"username": username}
@@ -775,7 +802,7 @@ func createPost(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusCreated, newPost)
-	// fmt.Println("Post successfuly created")
+	fmt.Println("Post successfuly created")
 	client.Disconnect(context)
 }
 
@@ -966,37 +993,43 @@ func getPosts(context *gin.Context) {
 	}
 	client := connectToDB()
 	database := client.Database("ForumPosts").Collection("ForumPosts")
-	filter := bson.D{{"movie_id", id}}
+	filter := bson.D{{Key: "movieid", Value: id}}
 	//have to set options to sort posts from most to least recent and limit the amount of retrievals
-	//opts := options.Find().SetLimit(int64(pageInt) * 50).SetSort(bson.D{{"$natural", -1}})
-	cursor, err := database.Find(context, filter)
-	if err == mongo.ErrNoDocuments {
-		context.IndentedJSON(http.StatusOK, gin.H{"error": "no posts found"})
-	}
+	opts := options.Find().SetLimit(50).SetSort(bson.D{{"$natural", -1}}).SetSkip(int64(pageInt-1) * 50)
+	//database.FindOne(context, filter).Decode(&post)
+	cursor, err := database.Find(context, filter, opts)
+
 	//marshals every result into the array
 	var posts []Post
 	if err = cursor.All(context, &posts); err != nil {
 		panic(err)
 	}
-	if len(posts) < 50 {
-		context.IndentedJSON(http.StatusOK, posts)
-	} else {
-		lowerBound := (pageInt - 1) * 50
-		upperBound := pageInt * 50
-		//corrects for out of bounds page requests
-		if upperBound > len(posts) {
-			upperBound = len(posts)
-			lowerBound = upperBound - 50
+	if len(posts) == 0 {
+		/*works by sorting posts in REVERSE chronological order, getting the FIRST 50,
+		and flipping the order in the slice before sending it back to the frontend*/
+		opts := options.Find().SetLimit(50).SetSort(bson.D{{"$natural", 1}})
+		cursor, err := database.Find(context, filter, opts)
+		if err = cursor.All(context, &posts); err != nil {
+			panic(err)
 		}
-		posts = posts[lowerBound:upperBound]
+		if len(posts) == 0 {
+			context.IndentedJSON(http.StatusOK, gin.H{"error": "No posts found"})
+		} else {
+			//reverses order of posts before return - code from https://golangprojectstructure.com/reversing-go-slice-array/#concurrent-reordering
+			for i, j := 0, len(posts)-1; i < j; i, j = i+1, j-1 {
+				posts[i], posts[j] = posts[j], posts[i]
+			}
+			context.IndentedJSON(http.StatusOK, posts)
+		}
+	} else {
 		context.IndentedJSON(http.StatusOK, posts)
 	}
 	client.Disconnect(context)
 }
 
 func getUserInfo(context *gin.Context) {
-	header := context.GetHeader("Authorization")
-	headerToken := strings.ReplaceAll(header, "Bearer ", "")
+	cookie, _ := context.Cookie("token")
+	headerToken := strings.ReplaceAll(cookie, "Bearer ", "")
 	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
@@ -1009,7 +1042,7 @@ func getUserInfo(context *gin.Context) {
 	client := connectToDB()
 
 	database := client.Database("UserInfo").Collection("UserInfo")
-	filter := bson.D{{"username", username}}
+	filter := bson.D{{Key: "username", Value: username}}
 	var user User
 	err = database.FindOne(context, filter).Decode(&user)
 	if err != nil {
@@ -1164,7 +1197,7 @@ func CORSMiddleware() gin.HandlerFunc {
 
 func main() {
 	//Checks for database updates on startup
-	updateGeneratorParameters()
+	// updateGeneratorParameters()
 	client := connectToDB()
 	database := client.Database("GeneratorParameters").Collection("GeneratorParameters")
 	filter := bson.D{{}}
@@ -1179,9 +1212,20 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	//Sets up routing
 	router := gin.Default()
-	router.Use(CORSMiddleware())
-	router.GET("/login", login)
-	router.GET("/me", getUserInfo)
+	// router.Use(CORSMiddleware())
+	router.Use(
+		cors.New(
+			cors.Config{
+				AllowOrigins:     []string{"http://localhost:4200", "http://localhost:4200/user"},
+				AllowMethods:     []string{"GET", "POST", "DELETE", "PUT"},
+				AllowHeaders:     []string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "accept", "origin", "Cache-Control"},
+				AllowCredentials: true,
+			},
+		),
+	)
+	router.POST("/login", login)
+	router.POST("/logout", logout)
+	router.GET("/user", getUserInfo)
 	router.GET("/generate", randomMovie)
 	router.GET("/generate/similar/:id", getSimilarMovies)
 	router.GET("/posts/:id/:page", getPosts)
@@ -1190,7 +1234,6 @@ func main() {
 	router.POST("/:username/add", addToWatchlist)
 	router.POST("/posts", createPost)
 	router.DELETE("/posts/:postID", deletePost)
-	router.PUT("/posts/:postID", updatePost)
 	router.PUT("/:username/update", updateUserInfo)
 	router.DELETE("/:username/delete", removeUser)
 	router.DELETE("/:username/watchlist/remove", removeFromWatchlist)

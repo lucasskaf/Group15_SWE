@@ -157,10 +157,11 @@ func TestLogin(t *testing.T) {
 // timeout override command: go test -timeout 10m -run ^TestGenerateRandomNumber$ bingebuddy.com/m
 func TestGenerateRandomNumber(t *testing.T) {
 	smallest := 1.0
-	largest := 17.0
+	largest := 100.0
 	output := 0
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for output != int(smallest) {
-		output = generateRandomNumber(smallest, largest)
+		output = generateRandomNumber(smallest, largest, *rng)
 		fmt.Println(output)
 		//test automatically fails if out of bounds output is produced
 		if output < int(smallest) || output > int(largest) {
@@ -168,7 +169,7 @@ func TestGenerateRandomNumber(t *testing.T) {
 		}
 	}
 	for output != int(largest) {
-		output = generateRandomNumber(smallest, largest)
+		output = generateRandomNumber(smallest, largest, *rng)
 		fmt.Println(output)
 		if output < int(smallest) || output > int(largest) {
 			t.Fail()
@@ -179,7 +180,8 @@ func TestGenerateRandomNumber(t *testing.T) {
 // Command: go test -timeout 10m -run ^TestGetSimilarMovies$ bingebuddy.com/m
 func TestGetSimilarMovies(t *testing.T) {
 	for i := 0; i < 500; i++ {
-		id := generateRandomNumber(2.0, 1000.0)
+		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+		id := generateRandomNumber(2.0, 1000.0, *rng)
 		frontHalf := "https://api.themoviedb.org/3/movie/"
 		backHalf := "/similar?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&page=1"
 		requestString := frontHalf + fmt.Sprint(id) + backHalf
