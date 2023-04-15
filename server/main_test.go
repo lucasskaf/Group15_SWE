@@ -8,7 +8,10 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -139,10 +142,15 @@ func TestLogin(t *testing.T) {
 	for key, value := range testUsers {
 		mock := httptest.NewRecorder()
 		context, _ := gin.CreateTestContext(mock)
-		JSONcredentials := []byte(`{
-			"username": "` + key + `",
-			"password": "` + value.Password + `"
-		}`)
+		//JSONcredentials := []byte(`{
+		//	"username": "` + key + `",
+		//	"password": "` + value.Password + `"
+		//}`)
+		testCredentials := User{
+			Username: key,
+			Password: value.Password,
+		}
+		JSONcredentials, _ := json.Marshal(testCredentials)
 		request, _ := http.NewRequest("GET", "/login", bytes.NewBuffer(JSONcredentials))
 		context.Request = request
 
@@ -342,4 +350,281 @@ func TestDeletePost(t *testing.T) {
 		}
 	}
 
+}
+
+type Cast struct {
+	Cast []Actor `json:"cast"`
+}
+
+type Provider struct {
+	Results []US `json:"results"`
+}
+
+type US struct {
+	Link     string    `json:"link"`
+	Rent     []Service `json:"rent"`
+	Buy      []Service `json:"buy"`
+	Flatrate []Service `json:"flatrate"`
+}
+
+type Service struct {
+	ProviderName string `json:"provider_name"`
+	ProviderID   int    `json:"provider_id"`
+}
+
+func TestRandomMovieWithFilters(t *testing.T) {
+	actorNames := []string{
+		"Tom Hanks",
+		"Leonardo DiCaprio",
+		"Tom Cruise",
+		"Will Smith",
+		"Denzel Washington",
+		"Johnny Depp",
+		"Brad Pitt",
+		"Matt Damon",
+		"Samuel L. Jackson",
+		"Morgan Freeman",
+		"Robert Downey Jr.",
+		"Anthony Hopkins",
+		"Robert De Niro",
+		"Jack Nicholson",
+		"George Clooney",
+		"Al Pacino",
+		"Harrison Ford",
+		"Bruce Willis",
+		"Hugh Jackman",
+		"Liam Neeson",
+		"Matthew McConaughey",
+		"Keanu Reeves",
+		"Christian Bale",
+		"Robin Williams",
+		"Marlon Brando",
+		"Nicolas Cage",
+		"Joaquin Phoenix",
+		"Arnold Schwarzenegger",
+		"Mark Wahlberg",
+		"Meryl Streep",
+		"Adam Sandler",
+		"Dustin Hoffman",
+		"Clint Eastwood",
+		"Chris Hemsworth",
+		"Jamie Foxx",
+		"Vin Diesel",
+		"Charlton Heston",
+		"Antonio Banderas",
+		"James Stewart",
+		"Gary Cooper",
+		"Spencer Tracy",
+		"Ben Affleck",
+		"John Wayne",
+		"Kevin Spacey",
+		"Gary Oldman",
+		"Kirk Douglas",
+		"Don Cheadle",
+		"Sandra Bullock",
+		"Heath Ledger",
+		"Scarlett Johansson",
+		"Benedict Cumberbatch",
+	}
+	streamingServiceIDs := []int{
+		8,   //Netflix
+		9,   //Prime Video
+		188, //YouTube Premium
+		15,  //Hulu
+		337, //Disney+
+		384, //HBO Max
+		387, //Peacock Premium
+		283, //Crunchyroll
+		350, //Apple TV+
+	}
+	genreIds := []int{
+		28,    // Action
+		12,    // Adventure
+		16,    // Animation
+		35,    // Comedy
+		80,    // Crime
+		99,    // Documentary
+		18,    // Drama
+		10751, // Family
+		14,    // Fantasy
+		36,    // History
+		27,    // Horror
+		10402, // Music
+		9648,  // Mystery
+		10749, // Romance
+		878,   // Science Fiction
+		10770, // TV Movie
+		53,    // Thriller
+		10752, // War
+		37,    // Western
+	}
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	var noResults []GeneratorFilters
+	for i := 0; i < 50; i++ {
+		recorder := httptest.NewRecorder()
+		mock, _ := gin.CreateTestContext(recorder)
+		//determines number of genres and services
+		actorNumber := generateRandomNumber(0, 2, *rng)
+		serviceNumber := generateRandomNumber(0, 9.0, *rng)
+		genreNumber := generateRandomNumber(0, 3, *rng)
+		min_rating := rng.Float32() * 10
+		max_runtime := generateRandomNumber(60, 300, *rng)
+		var actors []string
+		var streaming_providers []int
+		var genres []int
+		for l := 0; l < actorNumber; l++ {
+			actors = append(actors, actorNames[generateRandomNumber(0, 49, *rng)])
+		}
+		for j := 0; j < serviceNumber; j++ {
+			id := streamingServiceIDs[generateRandomNumber(0, 8, *rng)]
+			streaming_providers = append(streaming_providers, id)
+			if id == 9 {
+				streaming_providers = append(streaming_providers, 10)
+			}
+		}
+		for k := 0; k < genreNumber; k++ {
+			genres = append(genres, genreIds[generateRandomNumber(0, 17, *rng)])
+		}
+		filters := GeneratorFilters{
+			Actors:     actors,
+			MaxRuntime: max_runtime,
+			Genres:     genres,
+			MinRating:  min_rating,
+			Providers:  streaming_providers,
+		}
+
+		JSONFilters, err := json.Marshal(filters)
+		if err != nil {
+			panic(err)
+		}
+		//cannot bind structs directly to context
+		req, err := http.NewRequest("GET", "http://localhost:8080/generate/filters", bytes.NewBuffer(JSONFilters))
+		mock.Request = req
+		randomMovieWithFilters(mock)
+		binary, _ := io.ReadAll(recorder.Result().Body)
+		var movie Movie
+		json.Unmarshal(binary, &movie)
+		//no results case - copies parameters for later use and skips
+		if movie.Title == "" && movie.ID == 0 {
+			noResults = append(noResults, filters)
+			continue
+		}
+		//now verifies that movie information is correct
+		var cast Cast
+		//compares immediately accessible components
+		if movie.VoteAverage < float64(min_rating) || movie.Runtime > max_runtime {
+			t.Fail()
+		}
+		//checks genre IDs
+		for _, id := range genres {
+			if !assert.Contains(t, movie.GenreIDs, id) {
+				t.Fail()
+			}
+		}
+		//checks cast information
+		requestString := "https://api.themoviedb.org/3/movie/" + strconv.Itoa(movie.ID) + "/credits?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US"
+		resp, _ := http.Get(requestString)
+		binary, _ = io.ReadAll(resp.Body)
+		json.Unmarshal(binary, &cast)
+		//copies cast names to string array
+		var castNames []string
+		for _, c := range cast.Cast {
+			castNames = append(castNames, c.Name)
+		}
+		for _, n := range actors {
+			if !assert.Contains(t, castNames, n) {
+				t.Fail()
+			}
+		}
+		requestString = "https://api.themoviedb.org/3/movie/" + strconv.Itoa(movie.ID) + "/watch/providers?api_key=010c2ddcdf323db029b6dca4cbfa49de"
+		resp, _ = http.Get(requestString)
+		//checks providers - information comes from JustWatch API
+		binary, _ = io.ReadAll(resp.Body)
+		respString := string(binary)
+		//uses contains on the string because I spent two hours trying to get it to marshal correctly into objects
+		serviceCounter := 0
+		for _, p := range streaming_providers {
+			if strings.Contains(respString, strconv.Itoa(p)) {
+				serviceCounter++
+			}
+		}
+		if serviceCounter == 0 && serviceNumber > 0 {
+			t.Fail()
+		}
+	}
+	//now checks cases with no results by making request again to confirm that there are no results
+	for _, c := range noResults {
+		var actorIDs []int
+		var ActorResults ActorResults
+		for i := 0; i < len(c.Actors); i++ {
+			frontHalf := "https://api.themoviedb.org/3/search/person?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&query="
+			backHalf := "&page=1&include_adult=false"
+			requestString := frontHalf + url.QueryEscape(c.Actors[i]) + backHalf
+			resp, err := http.Get(requestString)
+			if err != nil {
+				panic(err)
+			}
+			binary, err := io.ReadAll(resp.Body)
+			if err != nil {
+				panic(err)
+			}
+			json.Unmarshal(binary, &ActorResults)
+			//checks if requested actor exists
+			if len(ActorResults.Results) == 0 {
+				//context.IndentedJSON(http.StatusOK, gin.H{"error": "no results for actor " + filters.Actors[i]})
+				fmt.Printf("No results for actor" + c.Actors[i])
+			} else {
+				actorIDs = append(actorIDs, ActorResults.Results[0].Id)
+			}
+		}
+		requestString := "https://api.themoviedb.org/3/discover/movie?api_key=010c2ddcdf323db029b6dca4cbfa49de&language=en-US&include_adult=false&include_video=false&"
+		//adds the minimum rating
+		requestString += ("vote_average.gte=" + fmt.Sprintf("%f", c.MinRating) + "&with_cast=")
+		//loop adds actors to request
+		for _, a := range actorIDs {
+			requestString += (strconv.Itoa(a) + ",")
+		}
+		requestString += "&with_genres="
+		//loop adds genres to request
+		for _, g := range c.Genres {
+			requestString += (strconv.Itoa(g) + ",")
+		}
+		//specifies maximum runtime
+		requestString += ("&with_runtime.lte=" + strconv.Itoa(c.MaxRuntime))
+		//adds streaming providers
+		requestString += "&with_watch_providers="
+		for _, p := range c.Providers {
+			requestString += (strconv.Itoa(p) + "|")
+		}
+		//needs region flag to filter providers properly
+		requestString += "&watch_region=US"
+		resp, err := http.Get(requestString)
+		if err != nil {
+			panic(err)
+		}
+		binary, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		//makes request with full string
+		var resultPage MovieResults
+		resp, err = http.Get(requestString)
+		if err != nil {
+			panic(err)
+		}
+		binary, err = io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		json.Unmarshal(binary, &resultPage)
+		if len(resultPage.Results) > 0 {
+			//checks for appropriateness
+			for _, m := range resultPage.Results {
+				if filterMovies(&m) {
+					t.Fail()
+				}
+			}
+		}
+	}
 }
