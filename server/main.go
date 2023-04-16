@@ -329,14 +329,17 @@ func sanitizeMovieFields(movie *Movie, policy *bluemonday.Policy) {
 }
 
 func addToWatchlist(context *gin.Context) {
-	header := context.GetHeader("Authorization") // gets "Bearer token"
-	if header == "" {                            // checks if the authorization header is empty or not and throws error if it is
+	// header := context.GetHeader("Authorization") // gets "Bearer token"
+	cookie, _ := context.Cookie("token")
+
+	if cookie == "" { // checks if the authorization header is empty or not and throws error if it is
 		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
 		return
 	}
-	headerToken := strings.ReplaceAll(header, "Bearer ", "") // gets the token only, which is everything after "Bearer"
+
+	// headerToken := strings.ReplaceAll(cookie, "Bearer ", "") // gets the token only, which is everything after "Bearer"
 	// Now we parse through the token and check that it is valid, if not, then error
-	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+	userToken, err := jwt.Parse(cookie, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
 		}
@@ -757,14 +760,15 @@ func getSimilarMovies(context *gin.Context) {
 }
 
 func createPost(context *gin.Context) {
-	header := context.GetHeader("Authorization") // gets "Bearer token"
-	if header == "" {                            // checks if the authorization header is empty or not and throws error if it is
+	// header := context.GetHeader("Authorization") // gets "Bearer token"
+	cookie, _ := context.Cookie("token")
+	if cookie == "" { // checks if the authorization header is empty or not and throws error if it is
 		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
 		return
 	}
-	headerToken := strings.ReplaceAll(header, "Bearer ", "") // gets the token only, which is everything after "Bearer"
+	// headerToken := strings.ReplaceAll(header, "Bearer ", "") // gets the token only, which is everything after "Bearer"
 	// Now we parse through the token and check that it is valid, if not, then error
-	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+	userToken, err := jwt.Parse(cookie, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
 		}
@@ -1039,8 +1043,8 @@ func getPosts(context *gin.Context) {
 
 func getUserInfo(context *gin.Context) {
 	cookie, _ := context.Cookie("token")
-	headerToken := strings.ReplaceAll(cookie, "Bearer ", "")
-	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+	// headerToken := strings.ReplaceAll(cookie, "Bearer ", "")
+	userToken, err := jwt.Parse(cookie, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
 		}
