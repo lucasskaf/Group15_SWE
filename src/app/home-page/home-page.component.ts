@@ -18,11 +18,11 @@ export class HomePageComponent implements OnInit {
 
   constructor(
     private movieGeneratorService: MovieGeneratorService
-  ){
-    // this.getMovie(8)
-  }
+  ){}
 
   ngOnInit(): void {
+    this.getMovie()
+
     Emmiters.userData.subscribe(
       {
         next: (username : string) => {
@@ -56,24 +56,18 @@ export class HomePageComponent implements OnInit {
     // })
   }
 
-  // getMovie(numberOfMovies: number) {
-  //   for(let i = 0; i < numberOfMovies; i++){
-  //     this.movieGeneratorService.getRandomMovie()
-  //     // .subscribe(
-  //     //   {
-  //     //     next: (resp) => {
-  //     //       console.log(i)
-  //     //       console.log(resp)
-  //     //       resp.poster_path = `https://image.tmdb.org/t/p/original${resp.poster_path}`
-
-  //     //       this.movieList.push(resp)
-  //     //     },
-  //     //     error: (err) => {
-  //     //       console.log('ERROR GENERATING MOVIES')
-  //     //     }
-  //     //   }
-  //     // )
-  //   }
-  // }
+  getMovie() {
+    this.movieGeneratorService.getRandomMovie().subscribe(
+      {
+        next: (resp) => {
+          console.log(resp)
+          this.movieList = resp
+        },
+        error: (err) => {
+          console.log('ERROR GENERATING MOVIES')
+        }
+      }
+    )
+  }
   
 }

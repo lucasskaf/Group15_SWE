@@ -329,14 +329,17 @@ func sanitizeMovieFields(movie *Movie, policy *bluemonday.Policy) {
 }
 
 func addToWatchlist(context *gin.Context) {
-	header := context.GetHeader("Authorization") // gets "Bearer token"
-	if header == "" {                            // checks if the authorization header is empty or not and throws error if it is
+	// header := context.GetHeader("Authorization") // gets "Bearer token"
+	cookie, _ := context.Cookie("token")
+
+	if cookie == "" { // checks if the authorization header is empty or not and throws error if it is
 		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
 		return
 	}
-	headerToken := strings.ReplaceAll(header, "Bearer ", "") // gets the token only, which is everything after "Bearer"
+
+	// headerToken := strings.ReplaceAll(cookie, "Bearer ", "") // gets the token only, which is everything after "Bearer"
 	// Now we parse through the token and check that it is valid, if not, then error
-	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+	userToken, err := jwt.Parse(cookie, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
 		}
@@ -514,7 +517,7 @@ our API key: 010c2ddcdf323db029b6dca4cbfa49de
 As of 2/18/2022, the largest possible movie ID is 1088411, while the smallest possible movie ID is 2
 */
 
-func randomMovie(context *gin.Context) {
+func randomMovie(context *gin.Context) Movie {
 	appropriate := false
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var randMovie Movie
@@ -543,9 +546,19 @@ func randomMovie(context *gin.Context) {
 	//returns an empty struct and an error if function failed to produce a random movie.
 	if randMovie.Title == "" {
 		context.IndentedJSON(http.StatusInternalServerError, randMovie)
+		return randMovie
 	} else {
-		context.IndentedJSON(http.StatusOK, randMovie)
+		// context.IndentedJSON(http.StatusOK, randMovie)
+		return randMovie
 	}
+}
+
+func getRandomMoviesList(context *gin.Context) {
+	var movieList [8]Movie
+	for i := 0; i < 8; i++ {
+		movieList[i] = randomMovie(context)
+	}
+	context.IndentedJSON(http.StatusOK, movieList)
 }
 
 func randomMovieWithFilters(context *gin.Context) {
@@ -747,14 +760,15 @@ func getSimilarMovies(context *gin.Context) {
 }
 
 func createPost(context *gin.Context) {
-	header := context.GetHeader("Authorization") // gets "Bearer token"
-	if header == "" {                            // checks if the authorization header is empty or not and throws error if it is
+	// header := context.GetHeader("Authorization") // gets "Bearer token"
+	cookie, _ := context.Cookie("token")
+	if cookie == "" { // checks if the authorization header is empty or not and throws error if it is
 		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
 		return
 	}
-	headerToken := strings.ReplaceAll(header, "Bearer ", "") // gets the token only, which is everything after "Bearer"
+	// headerToken := strings.ReplaceAll(header, "Bearer ", "") // gets the token only, which is everything after "Bearer"
 	// Now we parse through the token and check that it is valid, if not, then error
-	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+	userToken, err := jwt.Parse(cookie, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
 		}
@@ -1029,8 +1043,8 @@ func getPosts(context *gin.Context) {
 
 func getUserInfo(context *gin.Context) {
 	cookie, _ := context.Cookie("token")
-	headerToken := strings.ReplaceAll(cookie, "Bearer ", "")
-	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+	// headerToken := strings.ReplaceAll(cookie, "Bearer ", "")
+	userToken, err := jwt.Parse(cookie, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
 		}
@@ -1226,7 +1240,7 @@ func main() {
 	router.POST("/login", login)
 	router.POST("/logout", logout)
 	router.GET("/user", getUserInfo)
-	router.GET("/generate", randomMovie)
+	router.GET("/generate", getRandomMoviesList)
 	router.GET("/generate/similar/:id", getSimilarMovies)
 	router.GET("/posts/:id/:page", getPosts)
 	router.POST("/generate/filters", randomMovieWithFilters)
