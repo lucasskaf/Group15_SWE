@@ -34,9 +34,8 @@
     justify-content: center;
 
     background-color: bisque;
-    padding: 35px 0 10px 0;
+    padding: 35px 0;
     width: 325px;
-    height: 550px;
 
     border-radius: 30px;
 }
@@ -74,6 +73,19 @@
 
 ::ng-deep .p-carousel .p-carousel-indicators {
     margin-top: 20px;
+}
+
+::ng-deep .pi.pi-star-fill, .pi.pi-star {
+    color: rgb(242, 170, 75);
+    font-size: 1.5rem;
+}
+
+::ng-deep.p-ripple.p-element.p-button.p-component {
+    background-color: #e25548;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+    margin-top: 15px;
+    border: 0;
 }
 
 footer {

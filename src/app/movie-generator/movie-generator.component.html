@@ -1,7 +1,76 @@
-<p-dialog header="{{generatedMovie.title}}" [visible]="isPopupOpen" [style]="{width: '60vw'}" [modal]="true" [closable]="false" [closeOnEscape]="true">
+<p-toast [showTransformOptions]="'translateY(100%)'" [showTransitionOptions]="'300ms'" [hideTransitionOptions]="'300ms'" [showTransformOptions]="'translateX(100%)'"></p-toast>
+<p-dialog header="This is our recomendation for you!" [visible]="isPopupOpen" [style]="{width: '60vw'}" [modal]="true" [closable]="false" [closeOnEscape]="true">
     <div id="d-content">
-        <img src="https://image.tmdb.org/t/p/original{{generatedMovie.poster_path}}" alt="Movie Poster">
-        <button type="button" pButton label="Back" icon="pi pi-arrow-left" (click)="isPopupOpen = false" class="p-g-button"></button>
+        <div id="movie-data">
+            <img src="https://image.tmdb.org/t/p/original{{generatedMovie.poster_path}}" alt="Movie Poster">
+            <div id="text">
+                <h3 id="movie-title">{{generatedMovie.title}}</h3>
+                <div id="subtitle">
+                    <div id="movie-rating" *ngIf="generatedMovie">
+                        <p class="rating" *ngIf="generatedMovie.vote_average >= 8">
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star-fill"></i>
+                        </p>
+                        <p class="rating" *ngIf="generatedMovie.vote_average < 8 && generatedMovie.vote_average >= 6">
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star"></i>
+                        </p>
+                        <p class="rating" *ngIf="generatedMovie.vote_average < 6 && generatedMovie.vote_average >= 4">
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star"></i>
+                            <i class="pi pi-star"></i>
+                        </p>
+                        <p class="rating" *ngIf="generatedMovie.vote_average < 4 && generatedMovie.vote_average >= 2">
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star"></i>
+                            <i class="pi pi-star"></i>
+                            <i class="pi pi-star"></i>
+                        </p>
+                        <p class="rating" *ngIf="generatedMovie.vote_average < 2 && generatedMovie.vote_average >= 0">
+                            <i class="pi pi-star-fill"></i>
+                            <i class="pi pi-star"></i>
+                            <i class="pi pi-star"></i>
+                            <i class="pi pi-star"></i>
+                            <i class="pi pi-star"></i>
+                        </p>
+                    </div>
+                    <p id="year">{{generatedMovie.release_date?.substring(0, 4)}}</p>
+                </div>
+                <p id="movie-overview">{{generatedMovie.overview}}</p>
+                <div id="movie-posts">
+                    <h4>Reviews</h4>
+                    <button *ngIf="!isPostOpen" [disabled]="!isAuthenticated || !isMovieWatched" type="button" pButton label="Add Post" icon="pi pi-plus" (click)="toogleAddPost()" class="p-g-button-add" id="add-post"></button>
+                    <button *ngIf="isPostOpen" type="button" pButton label="Cancel" icon="pi pi-times" (click)="toogleAddPost()" class="p-g-button" id="cancel-post"></button>
+                </div>
+                <div id="add-post-input" *ngIf="isPostOpen">
+                    <form [formGroup]="postForm" (ngSubmit)="onSubmitPost(postForm.value)" action="">
+                        <span class="p-float-label">
+                            <input type="text" id="title-input" pInputText formControlName="title"/>
+                            <label htmlFor="title-input">Title</label>
+                        </span>
+                        <span class="p-float-label">
+                            <textarea id="body-input" rows="5" cols="30" pInputTextarea formControlName="body" [autoResize]="true" required></textarea>
+                            <label for="body-input">What did you think of this movie?</label>
+                        </span>
+                        <button type="submit" pButton label="Send Review" icon="pi pi-check" class="p-g-button" id="p-g-post"></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div id="buttons">
+            <button type="button" pButton label="Back" icon="pi pi-arrow-left" (click)="isPopupOpen = false" class="p-g-button"></button>
+            <button *ngIf="isAuthenticated && !isMovieWatched" type="button" pButton label="Add to Watched List" icon="pi pi-plus" (click)="addToWatchlist(generatedMovie)" class="p-g-button-add"></button>
+            <button *ngIf="isAuthenticated && isMovieWatched" type="button" pButton label="Added to your list!" icon="pi pi-check-circle" class="p-g-button-watched"></button>
+        </div>
     </div>
 </p-dialog>
 <div id="generator-box">

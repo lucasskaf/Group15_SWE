@@ -20,12 +20,42 @@
                     <p id="movie-title">
                         {{movie.title}}
                     </p>
-                    <p id="date">
-                        {{movie.release_date}}
+                    <p class="rating" *ngIf="movie.vote_average >= 8">
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star-fill"></i>
                     </p>
-                    <p id="rating">
-                        {{movie.user_rating}}
+                    <p class="rating" *ngIf="movie.vote_average < 8 && movie.vote_average >= 6">
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star"></i>
                     </p>
+                    <p class="rating" *ngIf="movie.vote_average < 6 && movie.vote_average >= 4">
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star"></i>
+                        <i class="pi pi-star"></i>
+                    </p>
+                    <p class="rating" *ngIf="movie.vote_average < 4 && movie.vote_average >= 2">
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star"></i>
+                        <i class="pi pi-star"></i>
+                        <i class="pi pi-star"></i>
+                    </p>
+                    <p class="rating" *ngIf="movie.vote_average < 2 && movie.vote_average >= 0">
+                        <i class="pi pi-star-fill"></i>
+                        <i class="pi pi-star"></i>
+                        <i class="pi pi-star"></i>
+                        <i class="pi pi-star"></i>
+                        <i class="pi pi-star"></i>
+                    </p>
+                    <p-button icon="pi pi-info-circle" label="Learn more"></p-button>
                 </div>
             </div>
         </ng-template>
