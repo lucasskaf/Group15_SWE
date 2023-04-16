@@ -79,6 +79,8 @@ export class LoginRegisterComponent implements OnInit {
             Emmiters.authEmmiter.emit(true)
             Emmiters.isLoginOpen.emit(false)
             Emmiters.userData.emit(userInfo.username)
+            Emmiters.watchList.emit(userInfo.watchlist)
+            console.log(`WATCHLIST: ${userInfo.watchlist}`)
             this.toast.success({detail: "Success", summary: "You were logged in!", duration: 4000})
           }
         })
