@@ -6,17 +6,9 @@ import { Component, Output, Input, EventEmitter } from '@angular/core';
   styleUrls: ['./navbar.component.css']
 })
 export class NavbarComponent {
-  @Output() openSidenav = new EventEmitter<boolean>();
-  @Input() sidenavStatus: boolean = false;
-
   constructor() { }
 
   ngOnInit() {
 
-  }
-
-  public onSidenavClick(): void {
-    this.openSidenav.emit(!this.sidenavStatus);
-    this.sidenavStatus = !this.sidenavStatus
   }
 }

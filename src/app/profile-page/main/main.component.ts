@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Output, Input, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-main',
@@ -6,10 +6,18 @@ import { Component } from '@angular/core';
   styleUrls: ['./main.component.css']
 })
 export class MainComponent {
-  isSidenavOpen: boolean = false;
+  @Output() isClosed = new EventEmitter<boolean>();
+  @Input() isOpen : boolean = false;
+  isAddMoviePopupOpen: boolean = false;
+  isAddPostPopupOpen: boolean = false;
 
-  public toggleSidenavStatus(event: boolean): void {
-    this.isSidenavOpen = event;
-    console.log("sidenavStatus: " + this.isSidenavOpen);
+  constructor() { }
+
+  public toggleAddMoviePopupStatus(event: boolean): void {
+    this.isAddMoviePopupOpen = event;
+  }
+
+  public toggleAddPostPopupStatus(event: boolean): void {
+    this.isAddPostPopupOpen = event;
   }
 }
