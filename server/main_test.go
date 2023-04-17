@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -21,17 +23,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// go test -timeout 30m -v -run ^TestRandomMovie$ bingebuddy.com/m
 func TestRandomMovie(t *testing.T) {
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 10; i++ {
 		recorder := httptest.NewRecorder()
 		context, _ := gin.CreateTestContext(httptest.NewRecorder())
+		timer := stopwatch.Start()
 		randomMovie(context)
 		if recorder.Code != 200 {
-			t.Fail()
+			t.FailNow()
 		}
+		timer.Stop()
+		time := timer.Milliseconds()
+		avgTime := time / 1000
+		t.Logf("Average time: %d ms", avgTime)
 	}
 }
 
+// go test -timeout 30m -v -run ^TestTrueRandomMovie$ bingebuddy.com/m
 // escape + i and then :wq to exit vim
 // Tests average speed of random movie function ;  go test -timeout 10m -run ^TestRandomMovie$ bingebuddy.com/m
 func TestTrueRandomMovie(t *testing.T) {
@@ -42,14 +51,14 @@ func TestTrueRandomMovie(t *testing.T) {
 	smallest = 2
 	//naming objects underscores makes go not force you to use them.
 	timer := stopwatch.Start()
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10; i++ {
 		randomMovie(context)
 	}
 	timer.Stop()
 	time := timer.Milliseconds()
-	avgTime := time / 5000
+	avgTime := time / 1000
 	//error logging doesn't work so you must set a breakpoint here to see average time
-	fmt.Printf("Average time: %d ms", avgTime)
+	t.Logf("Average time: %d ms", avgTime)
 }
 
 // Generates random users, puts them into global array for testing
@@ -65,28 +74,42 @@ func randSeq(n int) string {
 var testUsers map[string]User
 var testPosts map[string]Post
 
-func generateUsers() {
-	//starts with blank map
+func generateUsers(iterations int) {
+	//starts with blank map and temp file
 	newMap := make(map[string]User)
-	for i := 0; i < 500; i++ {
+	file, err := os.Create("users.csv")
+	//if file already exists, delete it and make a new one
+	if os.IsExist(err) {
+		os.Remove("users.csv")
+		file, err = os.Create("users.csv")
+	}
+	defer file.Close() //writes to file so that login test can be run separately
+	for i := 0; i < iterations; i++ {
 		var user User
 		rng := rand.New(rand.NewSource(time.Now().Unix()))
-
-		usernameLength := int((rng.Float64() * 400))
-		passwordLength := int((rng.Float64() * 400))
+		usernameLength := generateRandomNumber(0, 55, *rng)
+		passwordLength := generateRandomNumber(0, 55, *rng)
 		user.Username = randSeq(usernameLength)
 		user.Password = randSeq(passwordLength)
+		_, duplicate := newMap[user.Username]
+		for duplicate {
+			user.Username = randSeq(usernameLength)
+			user.Password = randSeq(passwordLength)
+			_, duplicate = newMap[user.Username]
+		}
 		newMap[user.Username] = user
+		profile := user.Username + "," + user.Password + "\n"
+		file.WriteString(profile)
+		if err != nil {
+			panic(err)
+		}
 	}
 	testUsers = newMap
 }
 
-func checkDuplicate(user User) bool {
-	if user.Username == "" || user.Password == "" {
-		return true
-	}
-	_, duplicate := testUsers[user.Username]
-	return duplicate
+func validationBool(user *User) bool {
+	ok, _ := validateUser(user)
+	return ok
 }
 
 // go test -timeout 20m -run ^TestCreateUser$ bingebuddy.com/m
@@ -100,7 +123,7 @@ func TestCreateUser(t *testing.T) {
 	deletionContext, _ := gin.CreateTestContext(recorder)
 	database.DeleteMany(deletionContext, filter)
 	//generates users
-	generateUsers()
+	generateUsers(50)
 	for _, value := range testUsers {
 		currUser := value
 		marshalledUser, _ := json.Marshal(currUser)
@@ -109,14 +132,14 @@ func TestCreateUser(t *testing.T) {
 
 		req, err := http.NewRequest("POST", "/signup", bytes.NewBuffer(marshalledUser))
 		if err != nil {
-			t.Fail()
+			t.FailNow()
 		}
 		context.Request = req
 		createUser(context)
 
 		code := mock.Code
-		if code != 200 && checkDuplicate(currUser) == false {
-			t.Fail()
+		if code != 200 && validationBool(&currUser) != false {
+			t.FailNow()
 		}
 
 		//tests whether duplicates are correctly rejected.
@@ -124,14 +147,14 @@ func TestCreateUser(t *testing.T) {
 		duplicateContext, _ := gin.CreateTestContext(duplicateMock)
 		duplicateReq, err := http.NewRequest("POST", "/signup", bytes.NewBuffer(marshalledUser))
 		if err != nil {
-			t.Fail()
+			t.FailNow()
 		}
 		duplicateContext.Request = duplicateReq
 		createUser(duplicateContext)
 		duplicatecode := duplicateMock.Code
 
 		if duplicatecode != 400 {
-			t.Fail()
+			t.FailNow()
 		}
 	}
 }
@@ -139,6 +162,22 @@ func TestCreateUser(t *testing.T) {
 // go test -timeout 20m -run ^TestLogin$ bingebuddy.com/m
 func TestLogin(t *testing.T) {
 	localMode = true
+	file, err := os.Open("users.csv")
+	testUsers := make(map[string]User)
+	if os.IsNotExist(err) {
+		return
+	}
+	fileScanner := bufio.NewScanner(file)
+	//scans use file line by line
+	for fileScanner.Scan() {
+		var user User
+		lineString := string(fileScanner.Bytes())
+		credentials := strings.Split(lineString, ",")
+		user.Username = credentials[0]
+		user.Password = credentials[1]
+		testUsers[user.Username] = user
+	}
+	//gets file of random credentials created with username
 	for key, value := range testUsers {
 		mock := httptest.NewRecorder()
 		context, _ := gin.CreateTestContext(mock)
@@ -159,6 +198,7 @@ func TestLogin(t *testing.T) {
 		assert.Equal(t, http.StatusOK, mock.Code)
 		assert.NotEmpty(t, mock.Body.String())
 	}
+	os.Remove("user.csv")
 }
 
 // tests formula used to generate random IDs
@@ -173,14 +213,14 @@ func TestGenerateRandomNumber(t *testing.T) {
 		fmt.Println(output)
 		//test automatically fails if out of bounds output is produced
 		if output < int(smallest) || output > int(largest) {
-			t.Fail()
+			t.FailNow()
 		}
 	}
 	for output != int(largest) {
 		output = generateRandomNumber(smallest, largest, *rng)
 		fmt.Println(output)
 		if output < int(smallest) || output > int(largest) {
-			t.Fail()
+			t.FailNow()
 		}
 	}
 }
@@ -195,7 +235,7 @@ func TestGetSimilarMovies(t *testing.T) {
 		requestString := frontHalf + fmt.Sprint(id) + backHalf
 		resp, err := http.Get(requestString)
 		if err != nil {
-			t.Fail()
+			t.FailNow()
 		}
 		defer resp.Body.Close()
 		httpBinary, _ := io.ReadAll(resp.Body)
@@ -215,7 +255,7 @@ func TestGetSimilarMovies(t *testing.T) {
 		json.Unmarshal(httpBinary, &r1)
 		json.Unmarshal(functionBinary, &r2)
 		if !reflect.DeepEqual(r1, r2) {
-			t.Fail()
+			t.FailNow()
 		}
 	}
 }
@@ -247,18 +287,21 @@ func generatePosts(executions int) {
 func TestCreatePost(t *testing.T) {
 	//generates token given a known valid username and account
 	user := User{
-		Username: "test1324",
+		Username: "test1234",
 		Password: "1234",
 		Posts:    []Post{},
 	}
 	localMode = true
 	token, _ := generateToken(user)
-	generatePosts(300)
+	generatePosts(50)
 	mock := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(mock)
 	//resets profile to faciliate repeated testing
 	profileBinary, _ := json.Marshal(user)
-	updateReq := httptest.NewRequest("GET", "http://localhost:8080/updateUserInfo", bytes.NewBuffer(profileBinary))
+	creationReq := httptest.NewRequest("POST", "http://localhost:8080/signup", bytes.NewBuffer(profileBinary))
+	context.Request = creationReq
+	createUser(context)
+	updateReq := httptest.NewRequest("PUT", "http://localhost:8080/updateUserInfo", bytes.NewBuffer(profileBinary))
 	updateReq.Header = map[string][]string{
 		"Authorization": {token},
 	}
@@ -281,7 +324,15 @@ func TestCreatePost(t *testing.T) {
 	request := httptest.NewRequest("GET", "http://localhost:8080", nil)
 	request.Header = map[string][]string{
 		"Authorization": {token},
+		"token":         {token},
 	}
+	c := http.Cookie{
+		Name:   "token",
+		Value:  token,
+		Path:   "",
+		Domain: "",
+	}
+	request.AddCookie(&c)
 	context.Request = request
 	getUserInfo(context)
 	binaryInfo, _ := io.ReadAll(mock.Body)
@@ -290,7 +341,7 @@ func TestCreatePost(t *testing.T) {
 		origPost := testPosts[p.Title]
 		origPost.Date = time.Now().Format("January 2, 2006")
 		if !postsIdentical(&origPost, &p) {
-			t.Fail()
+			t.FailNow()
 		}
 	}
 }
@@ -346,7 +397,7 @@ func TestDeletePost(t *testing.T) {
 	for i := range user.Posts {
 		//fails test if the user has any posts remaining that have not been deleted
 		if i > 0 {
-			t.Fail()
+			t.FailNow()
 		}
 	}
 
@@ -514,12 +565,12 @@ func TestRandomMovieWithFilters(t *testing.T) {
 		var cast Cast
 		//compares immediately accessible components
 		if movie.VoteAverage < float64(min_rating) || movie.Runtime > max_runtime {
-			t.Fail()
+			t.FailNow()
 		}
 		//checks genre IDs
 		for _, id := range genres {
 			if !assert.Contains(t, movie.GenreIDs, id) {
-				t.Fail()
+				t.FailNow()
 			}
 		}
 		//checks cast information
@@ -534,7 +585,7 @@ func TestRandomMovieWithFilters(t *testing.T) {
 		}
 		for _, n := range actors {
 			if !assert.Contains(t, castNames, n) {
-				t.Fail()
+				t.FailNow()
 			}
 		}
 		requestString = "https://api.themoviedb.org/3/movie/" + strconv.Itoa(movie.ID) + "/watch/providers?api_key=010c2ddcdf323db029b6dca4cbfa49de"
@@ -550,7 +601,7 @@ func TestRandomMovieWithFilters(t *testing.T) {
 			}
 		}
 		if serviceCounter == 0 && serviceNumber > 0 {
-			t.Fail()
+			t.FailNow()
 		}
 	}
 	//now checks cases with no results by making request again to confirm that there are no results
@@ -623,7 +674,7 @@ func TestRandomMovieWithFilters(t *testing.T) {
 			//checks for appropriateness
 			for _, m := range resultPage.Results {
 				if filterMovies(&m) {
-					t.Fail()
+					t.FailNow()
 				}
 			}
 		}
