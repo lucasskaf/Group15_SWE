@@ -1248,6 +1248,7 @@ func main() {
 	router.POST("/:username/add", addToWatchlist)
 	router.POST("/posts", createPost)
 	router.DELETE("/posts/:postID", deletePost)
+  router.PUT("/posts/:postID", updatePost)
 	router.PUT("/:username/update", updateUserInfo)
 	router.DELETE("/:username/delete", removeUser)
 	router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
