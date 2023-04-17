@@ -19,15 +19,22 @@ export interface Movie {
 	status?: string,  
 	tagline?: string,  
 	title?: string, 
-	vote_average?: number,
+	vote_average: number,
 	vote_count?: number,  
 	user_rating?: number
 }
 
+export interface moviePosts {
+  movieid: string,
+  username: string,
+  title: string,
+  body: string
+}
 
 export interface User {
     "username" : string,
-    "password" : string   
+    "password" : string,
+	"watchlist": Movie[]
 }
 
 // rating: number,

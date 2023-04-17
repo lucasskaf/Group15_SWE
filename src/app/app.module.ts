@@ -19,7 +19,12 @@ import { MatSliderModule } from '@angular/material/slider'
 import {MatInputModule} from '@angular/material/input';
 import { CarouselModule } from 'primeng/carousel'
 import { RatingModule } from 'primeng/rating';
-import { routing } from './app-routing.module';
+import { DialogModule } from 'primeng/dialog';
+import { ButtonModule } from 'primeng/button';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputTextareaModule } from 'primeng/inputtextarea';
 
 @NgModule({
   declarations: [
@@ -46,9 +51,15 @@ import { routing } from './app-routing.module';
     MatInputModule,
     CarouselModule,
     RatingModule,
-    routing
+    DialogModule,
+    ButtonModule,
+    ToastModule,
+    InputTextModule,
+    InputTextareaModule
   ],
-  providers: [],
+  providers: [
+    MessageService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

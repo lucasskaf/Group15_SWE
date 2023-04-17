@@ -1,5 +1,13 @@
+@import url("../../../node_modules/primeicons/primeicons.css");
+
 * {
     font-family: 'Montserrat', sans-serif;
+}
+
+img {
+    width: 355px;
+    box-shadow: 0px 0px 35px 5px rgba(0, 0, 0, 0.25);
+    margin: 35px 25px 35px 10px;
 }
 
 #generator-icon {
@@ -76,4 +84,98 @@ form button {
 
 ::ng-deep .p-rating:not(.p-disabled):not(.p-readonly) .p-rating-icon:hover {
     color: #964c8f;
+}
+
+#d-content {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+}
+
+#d-content #movie-data {
+    display: flex;
+}
+
+#d-content #movie-title {
+    margin-top: 35px;
+    margin-bottom: 10px;
+    margin-right: 10px;
+    font-size: 1.5rem;
+}
+
+#d-content #subtitle {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#d-content #subtitle #year {
+    margin: 0 0 0 10px;
+}
+
+#d-content #movie-overview {
+    margin-right: 10px;
+}
+
+#movie-posts {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+span.p-float-label{
+    margin: 10px 0 15px 0;
+}
+
+span.p-float-label, span.p-float-label input, span.p-float-label textarea {
+    width: 100%;
+}
+
+#add-post-input {
+    background-color: rgb(235, 217, 179);
+    padding: 10px 15px;
+    border-radius: 15px;
+}
+
+
+::ng-deep #p-g-post.p-element.p-g-button.p-button.p-component {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: rgb(237, 142, 10);
+    border: 0;
+}
+
+::ng-deep .p-element.p-g-button.p-button.p-component {
+    background-color: rgb(225, 82, 65);
+    border-width: 0;
+    margin-left: 10px;
+}
+
+::ng-deep .p-element.p-g-button-add.p-button.p-component {
+    background-color: rgb(232, 150, 18);
+    border-width: 0;
+    margin-left: 10px;
+}
+
+::ng-deep .p-element.p-g-button-watched.p-button.p-component {
+    background-color: rgb(237, 142, 10);
+    border-width: 0;
+    margin-left: 10px;
+    width: 238.39px;
+}
+
+::ng-deep.rating.ng-star-inserted {
+    margin: 0 0;
+}
+
+::ng-deep .pi.pi-star-fill, .pi.pi-star {
+    color: rgb(242, 170, 75);
+    font-size: 1.5rem;
+}
+
+::ng-deep #add-post.p-element.p-g-button-add.p-button.p-component {
+    padding: 5px 10px;
+    height: 40px;
 }
