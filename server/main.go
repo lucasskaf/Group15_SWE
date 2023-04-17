@@ -15,13 +15,13 @@ import (
 	//"gorm.io/gorm"
 
 	//"compress/gzip"
-
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -37,40 +37,41 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/gin-contrib/cors"
 )
 
 // this is the movie struct that contains all the different fields for a movie
 type Movie struct {
-	Adult               bool     `json:"adult"`                                                                                             // Indicates if the movie is adult-rated.
-	BackdropPath        string   `json:"backdrop_path,omitempty"`                                                                           // Path to the backdrop image for the movie.
-	Budget              int      `json:"budget,omitempty"`                                                                                  // The movie's budget in dollars.
-	Genres              []string `json:"genres,omitempty"`                                                                                  // The genres associated with the movie.
-	Homepage            string   `json:"homepage,omitempty"`                                                                                // The movie's homepage URL.
-	ID                  int      `json:"id,omitempty"`                                                                                      // The movie's unique ID.
-	OriginalLanguage    string   `json:"original_language,omitempty"`                                                                       // The movie's original language code.
-	OriginalTitle       string   `json:"original_title,omitempty"`                                                                          // The movie's original title.
-	Overview            string   `json:"overview,omitempty"`                                                                                // A brief overview of the movie's plot.
-	Popularity          float64  `json:"popularity,omitempty"`                                                                              // The movie's popularity score.
-	PosterPath          string   `json:"poster_path,omitempty"`                                                                             // Path to the poster image for the movie.
-	ProductionCompanies []string `json:"production_companies,omitempty"`                                                                    // The production companies involved in making the movie.
-	ProductionCountries []string `json:"production_countries,omitempty"`                                                                    // The countries where the movie was produced.
-	ReleaseDate         *string  `json:"release_date,omitempty"`                                                                            // The movie's release date.
-	Revenue             *int     `json:"revenue,omitempty"`                                                                                 // The movie's box office revenue in dollars.
-	Runtime             *int     `json:"runtime,omitempty"`                                                                                 // The movie's runtime in minutes.
-	SpokenLanguages     []string `json:"spoken_languages,omitempty"`                                                                        // The languages spoken in the movie.
-	Status              string   `json:"status,omitempty" validate:"oneof=rumored planned in_production post_production released canceled"` // The movie's production status.
-	Tagline             string   `json:"tagline,omitempty"`                                                                                 // The movie's tagline.
-	Title               string   `json:"title,omitempty"`                                                                                   // The movie's title.
-	VoteAverage         float64  `json:"vote_average"`                                                                                      // The average rating given to the movie by users.
-	VoteCount           int      `json:"vote_count,omitempty"`                                                                              // The number of user ratings given to the movie.
-	UserRating          float32  `json:"user_rating,omitempty"`
+	Adult            bool     `json:"adult"`                   // Indicates if the movie is adult-rated.
+	BackdropPath     string   `json:"backdrop_path,omitempty"` // Path to the backdrop image for the movie.
+	Budget           int      `json:"budget,omitempty"`        // The movie's budget in dollars.
+	Genres           []Genre  `json:"genres,omitempty"`        // The genres associated with the movie.
+	GenreIDs         []int    `json:"genre_ids"`
+	Homepage         string   `json:"homepage,omitempty"`          // The movie's homepage URL.
+	ID               int      `json:"id,omitempty"`                // The movie's unique ID.
+	OriginalLanguage string   `json:"original_language,omitempty"` // The movie's original language code.
+	OriginalTitle    string   `json:"original_title,omitempty"`    // The movie's original title.
+	Overview         string   `json:"overview,omitempty"`          // A brief overview of the movie's plot.
+	Popularity       float64  `json:"popularity,omitempty"`        // The movie's popularity score.
+	PosterPath       string   `json:"poster_path,omitempty"`       // Path to the poster image for the movie.
+	ReleaseDate      string   `json:"release_date,omitempty"`      // The movie's release date.
+	Revenue          int      `json:"revenue,omitempty"`           // The movie's box office revenue in dollars.
+	Runtime          int      `json:"runtime,omitempty"`           // The movie's runtime in minutes.
+	SpokenLanguages  []string `json:"spoken_languages,omitempty"`  // The languages spoken in the movie.
+	Tagline          string   `json:"tagline,omitempty"`           // The movie's tagline.
+	Title            string   `json:"title,omitempty"`             // The movie's title.
+	VoteAverage      float64  `json:"vote_average"`                // The average rating given to the movie by users.
+	VoteCount        int      `json:"vote_count,omitempty"`        // The number of user ratings given to the movie.
+	UserRating       float32  `json:"user_rating,omitempty"`
+}
+type Genre struct {
+	Name string `json:"name"`
+	ID   int    `json:"id"`
 }
 
 type MovieResults struct {
-	Results    []Movie `json:"results"`
-	TotalPages int     `json:"total_pages"`
+	Results      []Movie `json:"results"`
+	TotalPages   int     `json:"total_pages"`
+	TotalResults int     `json:"total_results"`
 }
 
 type ActorResults struct {
@@ -123,7 +124,8 @@ type GeneratorFilters struct {
 }
 
 type Actor struct {
-	Id int `json:"id"`
+	Name string `json:"name"`
+	Id   int    `json:"id"`
 }
 
 // global generator parameters
@@ -324,8 +326,24 @@ func sanitizeMovieFields(movie *Movie, policy *bluemonday.Policy) {
 	}
 	movie.Title = policy.Sanitize(movie.Title)
 	for i, g := range movie.Genres {
-		movie.Genres[i] = policy.Sanitize(g)
+		g.Name = policy.Sanitize(g.Name)
+		movie.Genres[i] = g
 	}
+}
+
+func validateMovies(movie *Movie) (bool, string) {
+	sanitizeMovieFields(movie, nil)
+	if len(movie.Title) > 100 {
+		errString := "Movie title is too long"
+		return false, errString
+	}
+	for _, g := range movie.Genres {
+		if len(g.Name) > 40 {
+			errString := "Movie genre " + g.Name + " is too long"
+			return false, errString
+		}
+	}
+	return true, ""
 }
 
 func addToWatchlist(context *gin.Context) {
@@ -361,7 +379,10 @@ func addToWatchlist(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
 	}
-	sanitizeMovieFields(&movie, nil)
+	valid, errString := validateMovies(&movie)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errString})
+	}
 	if movie.OriginalTitle == "" {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 	}
@@ -555,18 +576,36 @@ func randomMovie(context *gin.Context) Movie {
 
 func getRandomMoviesList(context *gin.Context) {
 	var movieList [8]Movie
+	movieTitles := make(map[string]bool)
 	for i := 0; i < 8; i++ {
-		movieList[i] = randomMovie(context)
+		movie := randomMovie(context)
+		_, exists := movieTitles[movie.Title]
+		if !exists {
+			movieList[i] = movie
+			movieTitles[movie.Title] = true
+		} else {
+			i--
+		}
 	}
 	context.IndentedJSON(http.StatusOK, movieList)
 }
 
 func randomMovieWithFilters(context *gin.Context) {
 	var filters GeneratorFilters
+	blank := GeneratorFilters{}
 	filters.MaxRuntime = 4294967295
 	filters.MinRating = 0
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	appropriate := false
 	context.BindJSON(&filters)
+	//will call the correct function if the filters are empty
+	if reflect.DeepEqual(filters, blank) {
+		randomMovie(context)
+		return
+	}
+	//tracks visited pages and indices to avoid repeats - first map holds page numbers and second map holds page indices
+	visitedPages := make(map[int]map[int]bool)
+	visitedMovies := 0
 	//first assembles actor IDs for query
 	var actorIDs []int
 	var ActorResults ActorResults
@@ -602,7 +641,7 @@ func randomMovieWithFilters(context *gin.Context) {
 	requestString += "&with_genres="
 	//loop adds genres to request
 	for _, g := range filters.Genres {
-		requestString += (strconv.Itoa(g) + "|")
+		requestString += (strconv.Itoa(g) + ",")
 	}
 	//specifies maximum runtime
 	requestString += ("&with_runtime.lte=" + strconv.Itoa(filters.MaxRuntime))
@@ -637,16 +676,53 @@ func randomMovieWithFilters(context *gin.Context) {
 		context.IndentedJSON(http.StatusOK, gin.H{"error": "No results"})
 		return
 	} else {
-		//select a random page if there is more than one page of results
-		if resultPage.TotalPages > 1 {
+		//selects a random page if there is more than one page of results
+		switch pages := resultPage.TotalPages; pages {
+		case 1:
+			var index int
+			visitedPages = map[int]map[int]bool{1: make(map[int]bool)}
+			page := visitedPages[1]
+			for appropriate == false {
+				//returns no result if there are no appropriate movies
+				if resultPage.TotalResults == visitedMovies {
+					context.IndentedJSON(http.StatusOK, gin.H{"error": "No results for selected filters"})
+					return
+				}
+				index = generateRandomNumber(0, float64(len(resultPage.Results)-1), *rng)
+				_, exists := page[index]
+				if exists == false {
+					page[index] = true
+					visitedMovies++
+				} else {
+					//skips indices that have already been visited
+					continue
+				}
+				appropriate = filterMovies(&resultPage.Results[index])
+			}
+			result := resultPage.Results[index]
+			context.IndentedJSON(http.StatusOK, result)
+
+		default:
 			//resets slice
 			resultPage.Results = nil
+			var result Movie
 			//continues to execute if there are no movies in the given page
 			for len(resultPage.Results) == 0 {
-				if resultPage.TotalPages > 500 {
-					resultPage.TotalPages = 500
+				if visitedMovies == resultPage.TotalResults {
+					context.IndentedJSON(http.StatusOK, gin.H{"error": "No results for selected filters"})
+					return
+				}
+				if resultPage.TotalPages > 100 {
+					resultPage.TotalPages = 100
 				}
 				randomPage := generateRandomNumber(1, float64(resultPage.TotalPages), *rng)
+				//checks if page has been visited and adds it if it hasn't
+				page, exists := visitedPages[randomPage]
+				if exists == false {
+					visitedPages[randomPage] = make(map[int]bool)
+					page = visitedPages[randomPage]
+				}
+				//makes new request for specific page
 				newRequestString := requestString + "&page=" + strconv.Itoa(randomPage)
 				resp, err := http.Get(newRequestString)
 				if err != nil {
@@ -657,13 +733,22 @@ func randomMovieWithFilters(context *gin.Context) {
 					panic(err)
 				}
 				json.Unmarshal(binary, &resultPage)
+				index := generateRandomNumber(0, float64(len(resultPage.Results)-1), *rng)
+				//adds index to map if it isn't already there
+				_, exists = page[index]
+				if exists == false {
+					page[index] = true
+					visitedMovies++
+				} else {
+					//skips reruns loop if index already exists
+					continue
+				}
+				result = resultPage.Results[index]
+				appropriate = filterMovies(&result)
 			}
+			context.IndentedJSON(http.StatusOK, result)
 		}
-
 	}
-	index := generateRandomNumber(0, float64(len(resultPage.Results)-1), *rng)
-	result := resultPage.Results[index]
-	context.IndentedJSON(http.StatusOK, result)
 }
 
 func trueRandomMovie(context *gin.Context) {
@@ -708,7 +793,7 @@ func trueRandomMovie(context *gin.Context) {
 }
 
 func generateRandomNumber(smallest float64, largest float64, rng rand.Rand) int {
-	time.Sleep(17 * time.Microsecond)
+	time.Sleep(17 * time.Nanosecond)
 	output := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
 	return output
 }
@@ -736,8 +821,10 @@ func filterMovies(m *Movie) bool {
 		return false
 	}
 	//checks if movie is in English
-	en := strings.Contains(m.OriginalLanguage, "en")
-	return en
+	if m.OriginalLanguage != "en" {
+		return false
+	}
+	return true
 }
 
 func getSimilarMovies(context *gin.Context) {
@@ -837,7 +924,7 @@ func validatePost(post *Post) (bool, string) {
 		error = "post title and body cannot be blank"
 		return valid, error
 	}
-	if len(post.Title) > 100 || len(post.Body) > 1000 {
+	if len(post.Title) > 200 || len(post.Body) > 2500 {
 		valid = false
 		error = "post title or body is too long"
 		return valid, error
@@ -1227,16 +1314,6 @@ func main() {
 	//Sets up routing
 	router := gin.Default()
 	// router.Use(CORSMiddleware())
-	router.Use(
-		cors.New(
-			cors.Config{
-				AllowOrigins:     []string{"http://localhost:4200", "http://localhost:4200/user"},
-				AllowMethods:     []string{"GET", "POST", "DELETE", "PUT"},
-				AllowHeaders:     []string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "accept", "origin", "Cache-Control"},
-				AllowCredentials: true,
-			},
-		),
-	)
 	router.POST("/login", login)
 	router.POST("/logout", logout)
 	router.GET("/user", getUserInfo)
@@ -1245,7 +1322,7 @@ func main() {
 	router.GET("/posts/:id/:page", getPosts)
 	router.POST("/generate/filters", randomMovieWithFilters)
 	router.POST("/signup", createUser)
-	router.POST("/:username/add", addToWatchlist)
+	router.POST("/add", addToWatchlist)
 	router.POST("/posts", createPost)
 	router.DELETE("/posts/:postID", deletePost)
   router.PUT("/posts/:postID", updatePost)
