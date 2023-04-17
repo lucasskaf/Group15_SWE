@@ -11,4 +11,12 @@ export class NavbarComponent {
   ngOnInit() {
 
   }
+
+  onHomeClick() {
+
+  }
+
+  onLogoutClick() {
+    
+  }
 }

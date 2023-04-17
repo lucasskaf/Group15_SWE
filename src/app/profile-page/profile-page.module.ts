@@ -17,7 +17,7 @@ import { AddMoviePopupComponent } from './add-popup-movie/add-popup-movie.compon
 import { PostComponent } from '../common/post/post.component';
 import { AddPopopPostComponent } from './add-popop-post/add-popop-post.component';
 import { PostFormComponent } from './post-form/post-form.component';
-//import { routing } from './profile-page.routing';
+import { routing } from '../app-routing.module';
 
 @NgModule({
   declarations: [
@@ -40,8 +40,8 @@ import { PostFormComponent } from './post-form/post-form.component';
     MatSidenavModule,
     MatListModule,
     MatIconModule,
-    ReactiveFormsModule
-    //routing
+    ReactiveFormsModule,
+    routing
   ],
   exports: [
     MatToolbarModule,
