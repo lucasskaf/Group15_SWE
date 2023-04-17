@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { Movie } from '../user-auth/user';
+import { Movie, moviePosts } from '../user-auth/user';
 import { map } from 'rxjs';
 
 interface movieFilters {
@@ -24,6 +24,14 @@ export class MovieGeneratorService {
   }
 
   getRandomMovie() {
-    return this.httpClient.get<Movie>(`${this.serverURL}/generate`)
+    return this.httpClient.get<Movie[]>(`${this.serverURL}/generate`)
+  }
+
+  addToWatchList(movie: Movie){
+    return this.httpClient.post<Movie>(`${this.serverURL}/watchlist/add`, movie, {withCredentials: true})
+  }
+
+  addMoviePosts(post: moviePosts){
+    return this.httpClient.post<moviePosts>(`${this.serverURL}/posts`, post, {withCredentials: true})
   }
 }
