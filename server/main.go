@@ -928,6 +928,11 @@ func updatePost(context *gin.Context) {
 	}
 
 	postID := context.Param("postID")
+  if localMode {
+    url := context.Request.URL.String()
+    parts := strings.Split(url, "/")
+    postID = parts[len(parts)-1]
+  }
 	objectID, err := primitive.ObjectIDFromHex(postID)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "This is an invalid post ID"})
@@ -941,6 +946,9 @@ func updatePost(context *gin.Context) {
 	// Need to get the post that needs to be updated
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
 	filter := bson.M{"_id": objectID}
+  if localMode {
+    filter = bson.M{"postid": objectID}
+  }
 	var currentPost Post
 	err = postDatabase.FindOne(context, filter).Decode(&currentPost)
 	if err != nil { // post does not exist
