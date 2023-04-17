@@ -15,13 +15,13 @@ import (
 	//"gorm.io/gorm"
 
 	//"compress/gzip"
-
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -584,11 +584,17 @@ func getRandomMoviesList(context *gin.Context) {
 
 func randomMovieWithFilters(context *gin.Context) {
 	var filters GeneratorFilters
+	blank := GeneratorFilters{}
 	filters.MaxRuntime = 4294967295
 	filters.MinRating = 0
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	appropriate := false
 	context.BindJSON(&filters)
+	//will call the correct function if the filters are empty
+	if reflect.DeepEqual(filters, blank) {
+		randomMovie(context)
+		return
+	}
 	//tracks visited pages and indices to avoid repeats - first map holds page numbers and second map holds page indices
 	visitedPages := make(map[int]map[int]bool)
 	visitedMovies := 0
