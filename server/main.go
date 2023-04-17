@@ -576,8 +576,16 @@ func randomMovie(context *gin.Context) Movie {
 
 func getRandomMoviesList(context *gin.Context) {
 	var movieList [8]Movie
+	movieTitles := make(map[string]bool)
 	for i := 0; i < 8; i++ {
-		movieList[i] = randomMovie(context)
+		movie := randomMovie(context)
+		_, exists := movieTitles[movie.Title]
+		if !exists {
+			movieList[i] = movie
+			movieTitles[movie.Title] = true
+		} else {
+			i--
+		}
 	}
 	context.IndentedJSON(http.StatusOK, movieList)
 }
