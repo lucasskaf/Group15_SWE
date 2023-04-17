@@ -331,6 +331,21 @@ func sanitizeMovieFields(movie *Movie, policy *bluemonday.Policy) {
 	}
 }
 
+func validateMovies(movie *Movie) (bool, string) {
+	sanitizeMovieFields(movie, nil)
+	if len(movie.Title) > 100 {
+		errString := "Movie title is too long"
+		return false, errString
+	}
+	for _, g := range movie.Genres {
+		if len(g.Name) > 40 {
+			errString := "Movie genre " + g.Name + " is too long"
+			return false, errString
+		}
+	}
+	return true, ""
+}
+
 func addToWatchlist(context *gin.Context) {
 	// header := context.GetHeader("Authorization") // gets "Bearer token"
 	cookie, _ := context.Cookie("token")
@@ -364,7 +379,10 @@ func addToWatchlist(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
 	}
-	sanitizeMovieFields(&movie, nil)
+	valid, errString := validateMovies(&movie)
+	if !valid {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": errString})
+	}
 	if movie.OriginalTitle == "" {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 	}
