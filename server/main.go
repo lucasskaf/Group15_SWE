@@ -892,7 +892,7 @@ func validatePost(post *Post) (bool, string) {
 		error = "post title and body cannot be blank"
 		return valid, error
 	}
-	if len(post.Title) > 100 || len(post.Body) > 1000 {
+	if len(post.Title) > 200 || len(post.Body) > 2500 {
 		valid = false
 		error = "post title or body is too long"
 		return valid, error
