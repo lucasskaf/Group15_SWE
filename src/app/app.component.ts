@@ -1,5 +1,4 @@
 import {Component, OnInit} from '@angular/core';
-// import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -9,9 +8,4 @@ import {Component, OnInit} from '@angular/core';
 
 export class AppComponent {
   title = 'BingeBuddy';
-  // isLoginOpen = false
-
-  // public toogleLoginStatus(loginStatus : boolean): void{
-  //   this.isLoginOpen = loginStatus;
-  // }
 }
