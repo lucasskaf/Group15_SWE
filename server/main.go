@@ -798,7 +798,12 @@ func createPost(context *gin.Context) {
 	date := time.Now().Format("January 2, 2006")
 	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
-	result, err := postDatabase.InsertOne(context, newPost)
+	result, err := postDatabase.InsertOne(context, bson.M{
+    "username": username,
+    "title":    newPost.Title,
+    "body":     newPost.Body,
+    "date":     date,
+  })
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
 		return
@@ -806,6 +811,7 @@ func createPost(context *gin.Context) {
 
 	newPost.PostID = result.InsertedID.(primitive.ObjectID)
 	newPost.Date = date
+  newPost.Username = username
 
 	userDatabase := client.Database("UserInfo").Collection("UserInfo")
 	filter := bson.M{"username": username}
