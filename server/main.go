@@ -137,7 +137,7 @@ var localMode bool
 type Post struct {
 	PostID   primitive.ObjectID `json:"id"`
 	MovieID  string             `json:"movie_id"`
-  Rating   int                `json:"rating"`
+  Rating   float64            `json:"rating"`
 	Username string             `json:"username"`
 	Title    string             `json:"title"`
 	Body     string             `json:"body"`
@@ -850,9 +850,9 @@ func validatePost(post *Post) (bool, string) {
 		error = "post title or body is too long"
 		return valid, error
 	}
-  if post.Rating < 0 || post.Rating > 100 {
+  if post.Rating < 0 || post.Rating > 10 {
     valid = false
-    error = "rating value must be between 0 and 100"
+    error = "rating value must be between 0 and 10"
     return valid, error
   }
 	return valid, error
