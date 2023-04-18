@@ -364,6 +364,7 @@ func addToWatchlist(context *gin.Context) {
 	sanitizeMovieFields(&movie, nil)
 	if movie.OriginalTitle == "" {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+    return
 	}
 	filter := bson.D{{Key: "username", Value: username}}
 	var updatedUser User
