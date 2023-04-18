@@ -10,11 +10,13 @@ import { Movie } from '../user-auth/user';
   styleUrls: ['./home-page.component.css']
 })
 export class HomePageComponent implements OnInit {
+
   isLoginOpen = false
   isAuthenticated
   username = ""
   message = 'Home Page'
   movieList: Movie[] = []
+  userWatchlist: Movie[] = []
 
   constructor(
     private movieGeneratorService: MovieGeneratorService
@@ -60,7 +62,6 @@ export class HomePageComponent implements OnInit {
     this.movieGeneratorService.getRandomMovie().subscribe(
       {
         next: (resp) => {
-          console.log(resp)
           this.movieList = resp
         },
         error: (err) => {

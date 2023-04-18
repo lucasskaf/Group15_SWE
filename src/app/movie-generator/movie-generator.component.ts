@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { MovieGeneratorService } from '../services/movie-generator.service';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Movie, User, moviePosts } from '../user-auth/user';
@@ -8,164 +8,96 @@ import { Emmiters } from '../emitters/emmiters';
 @Component({
   selector: 'bb-movie-generator',
   templateUrl: './movie-generator.component.html',
-  styleUrls: ['./movie-generator.component.css']
+  styleUrls: ['./movie-generator.component.css'],
 })
 export class MovieGeneratorComponent implements OnInit {
+  testMovie: Movie = {
+    adult: false,
+    backdrop_path: '/892rHLop6XobpTmdJ05UfkWMZpf.jpg',
+    id: 789708,
+    original_language: 'en',
+    original_title: 'Hilda and the Mountain King',
+    overview:
+      'When Hilda wakes up in the body of a troll, she must use her wits and courage to get back home, become human again — and save the city of Trolberg.',
+    popularity: 36.58,
+    poster_path: '/Ac9xJvb1oTnv71j2yfdCQktIlYT.jpg',
+    release_date: '2021-12-30',
+    title: 'Hilda and the Mountain King',
+    vote_average: 7.5,
+    vote_count: 114,
+  };
 
-  username
-  generatorForm
-  postForm
-  generatedMovie: Movie = {vote_average: 0.0}
-  isPopupOpen: boolean = false
-  isAuthenticated: boolean = false
-  userWatchedList: Movie[] = []
-  isMovieWatched: boolean = false
-  isPostOpen: boolean = false
+  username;
+  generatorForm;
+  postForm;
+  generatedMovie: Movie = { vote_average: 0.0 };
+  openPopup: boolean = false;
 
-  constructor(private movieGeneratorService : MovieGeneratorService,
-    private formBuilder: FormBuilder) {
+  constructor(
+    private movieGeneratorService: MovieGeneratorService,
+    private formBuilder: FormBuilder
+  ) {
     this.generatorForm = this.formBuilder.group({
       actors: this.formBuilder.control(''),
       genres: this.formBuilder.control(''),
       min_rating: this.formBuilder.control(''),
       max_runtime: this.formBuilder.control(''),
-      streaming_providers: this.formBuilder.control('')
-    })
+      streaming_providers: this.formBuilder.control(''),
+    });
   }
 
   ngOnInit(): void {
-    Emmiters.authEmmiter.subscribe(
-      {
-        next: (auth : boolean) => {
-          this.isAuthenticated = auth
-        }
-      }
-    )
-
-    Emmiters.watchList.subscribe(
-      {
-        next: (userList: Movie[]) => {
-          this.userWatchedList = userList
-        }
-      }
-    )
-
-    Emmiters.userData.subscribe(
-      {
-        next: (username: string) => {
-          this.username = username
-        }
-      }
-    )
+    Emmiters.isPopupOpen.subscribe({
+      next: (status) => {
+        this.openPopup = status;
+      },
+    });
   }
 
-  getGeneratedMovie(filters){
-    this.movieGeneratorService.getRandomMovieWithFilters(filters).subscribe(
-      {
-        next: (respMovie) => {
-          console.log(respMovie)
-          this.generatedMovie = respMovie
-
-          if(this.userWatchedList.includes(this.generatedMovie)){
-            this.isMovieWatched = true
-          }
-          else {
-            this.isMovieWatched = false
-          }
-
-          console.log(`WAS MOVIE WATCHED: ${this.isMovieWatched}`)
-          this.showMovie()
-
-          console.log(`GETTING USERNAME: ${this.username}`)
-
-          this.postForm = this.formBuilder.group({
-            movieid: this.generatedMovie.id,
-            username: this.username,
-            title: this.formBuilder.control(''),
-            body: this.formBuilder.control('', Validators.required)
-          })
-        },
-        error: (err) => {
-          console.log(err)
-        }
-      }
-    )
+  getGeneratedMovie(filters) {
+    this.movieGeneratorService.getRandomMovieWithFilters(filters).subscribe({
+      next: (respMovie) => {
+        console.log(respMovie);
+        this.generatedMovie = respMovie;
+        Emmiters.isPopupOpen.emit(true);
+      },
+      error: (err) => {
+        console.log(err);
+      },
+    });
   }
 
-  showMovie() {
-    this.isPopupOpen = true
-  }
+  onSubmit(generatorData) {
+    console.log(`BFORE: ${generatorData}`);
 
-  closeMovie() {
-    console.log('CLICKED ON CLOSE')
-    this.isPopupOpen = false
-  }
-
-  onSubmit(generatorData){
-    console.log(`BFORE: ${generatorData}`)
-
+    let actors_array: string[] = [];
     // Text process
-    if(generatorData.actors){
-      generatorData.actors = generatorData.actors.toLowerCase()
+    if (generatorData.actors != '') {
+      generatorData.actors = generatorData.actors.toLowerCase();
+      actors_array = generatorData.actors.split(', ');
     }
-    
-    let actors_array = generatorData.actors.split(', ')
-    
-    generatorData.actors = actors_array
+
+    generatorData.actors = actors_array;
 
     //Rating & Runtime process
-    if(generatorData.min_rating) {
-      generatorData.min_rating = (parseFloat(generatorData.min_rating) * 2.0)
+    if (generatorData.min_rating) {
+      generatorData.min_rating = parseFloat(generatorData.min_rating) * 2.0;
     }
 
-    if(generatorData.max_runtime) {
-      generatorData.max_runtime = parseInt(generatorData.max_runtime)
+    if (generatorData.max_runtime) {
+      generatorData.max_runtime = parseInt(generatorData.max_runtime);
     }
 
-    console.log(`AFTER: ${generatorData}`)
+    console.log(`AFTER: ${generatorData}`);
 
-    this.getGeneratedMovie(generatorData)
-  }
-
-  onSubmitPost(post: moviePosts){
-    post.movieid = post.movieid.toString()
-    console.log(post)
-
-    this.movieGeneratorService.addMoviePosts(post).subscribe(
-      {
-        next: (resp) => {
-          console.log('ADDED SUCCESSFULLY')
-        },
-        error: (err) => {
-          console.log('NOT ADD POST')
-        }
-      }
-    )
+    this.getGeneratedMovie(generatorData);
   }
 
   formatLabel(value: number): string {
-    if(value % 60 == 0){
-      return (value / 60) + 'hrs'
+    if (value % 60 == 0) {
+      return value / 60 + 'hrs';
     }
 
-    return (Math.floor(value / 60)) + ':' + (value % 60)
-  }
-
-  addToWatchlist(movie: Movie) {
-    this.movieGeneratorService.addToWatchList(movie).subscribe(
-      {
-        next: (resp) => {
-          console.log(resp)
-          this.isMovieWatched = true
-        },
-        error: (err) => {
-          console.log(err)
-        }
-      }
-    )
-  }
-
-  toogleAddPost(){
-    this.isPostOpen = !this.isPostOpen
+    return Math.floor(value / 60) + ':' + (value % 60);
   }
 }

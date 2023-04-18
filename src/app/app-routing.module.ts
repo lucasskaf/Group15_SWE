@@ -8,4 +8,11 @@ const appRoutes: Routes = [
   { path: 'profile', component: MainComponent },
   { path: '', pathMatch: 'full', redirectTo: 'home' }
 ]
+
+// @NgModule({
+//   imports: [RouterModule.forRoot(appRoutes)],
+//   exports: [RouterModule]
+// })
+// export class AppRoutingModule { }
+
 export const routing = RouterModule.forRoot(appRoutes);
