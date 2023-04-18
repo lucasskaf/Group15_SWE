@@ -343,3 +343,100 @@ func TestDeletePost(t *testing.T) {
 	}
 
 }
+
+func TestUpdatePost(t *testing.T) {
+  localMode = true
+  // Create a test user
+  user := User{
+    Username: "Albert",
+    Password: "Gator",
+    Posts:    []Post{},
+  }
+
+  // Connect to the test database
+  dbURI := "mongodb+srv://test:1234@cluster0.gmfsqnv.mongodb.net/test"
+  clientOptions := options.Client().ApplyURI(dbURI)
+  client, err := mongo.Connect(context.Background(), clientOptions)
+  if err != nil {
+    t.Fatalf("Failed to connect to test database: %v", err)
+  }
+  defer client.Disconnect(context.Background())
+
+  // Insert the test user and post into the test database
+  usersCollection := client.Database("UserInfo").Collection("UserInfo")
+  _, err = usersCollection.InsertOne(context.Background(), user)
+  if err != nil {
+    t.Fatalf("Failed to insert user into test database: %v", err)
+  }
+
+  postsCollection := client.Database("ForumPosts").Collection("ForumPosts")
+
+	for i := 0; i < 500; i++ {
+		 // Create a test post
+		 post := Post{
+			PostID:   primitive.NewObjectID(),
+			Username: "Albert",
+			Title:    fmt.Sprintf("Albert's post %d", i),
+			Body:     fmt.Sprintf("This is my post number %d", i),
+			Date:     time.Now().Format("January 2, 2006"),
+		}
+
+		_, err = postsCollection.InsertOne(context.Background(), post)
+		if err != nil {
+			t.Fatalf("Failed to insert post into test database: %v", err)
+		}
+		user.Posts = append(user.Posts, post)
+	}
+
+	// Generate token for the test user
+	tokenString, err := generateToken(user)
+	if err != nil {
+		t.Fatalf("Failed to generate token: %v", err)
+	}
+
+	for _, post := range user.Posts {
+		// Call the updatePost function with the test data
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+	
+		
+		c.Request, _ = http.NewRequest(http.MethodPut, "/posts/"+post.PostID.Hex(), nil)
+		c.Request.Header.Set("Authorization", "Bearer "+tokenString)
+
+		// Set the updated post data in the request body
+		updatedPost := Post{
+			PostID: post.PostID,
+			Title: "Albert's Updated Post",
+			Body:  "This is my updated post",
+		}
+		updatedPostData, err := json.Marshal(updatedPost)
+		if err != nil {
+			t.Fatalf("Failed to marshal updated post data: %v", err)
+		}
+		
+		body := strings.NewReader(string(updatedPostData))
+		c.Request.Body = ioutil.NopCloser(body)
+		c.Request.ContentLength = int64(len(updatedPostData))
+		c.Request.Header.Set("Content-Type", "application/json")
+	
+		// Call the updatePost function
+	
+		updatePost(c)
+
+		// Check that the post was updated correctly
+		var updatedPostFromDB Post
+		err = postsCollection.FindOne(context.Background(), bson.M{"postid": post.PostID}).Decode(&updatedPostFromDB)
+		if err != nil {
+    		t.Fatalf("Failed to retrieve updated post from database: %v", err)
+		}
+
+		if updatedPostFromDB.Title != updatedPost.Title {
+    		t.Errorf("Failed to update post title: got %s, expected %s", updatedPostFromDB.Title, updatedPost.Title)
+		}
+
+		if updatedPostFromDB.Body != updatedPost.Body {
+    		t.Errorf("Failed to update post body: got %s, expected %s", updatedPostFromDB.Body, updatedPost.Body)
+		}
+	}
+
+}
