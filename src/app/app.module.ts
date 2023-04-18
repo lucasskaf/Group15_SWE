@@ -26,13 +26,16 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextareaModule } from 'primeng/inputtextarea';
+import { VirtualScrollerModule } from 'primeng/virtualscroller';
+import { MoviePopupComponent } from './movie-popup/movie-popup.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     NavBarComponent,
     MovieGeneratorComponent,
-    HomePageComponent
+    HomePageComponent,
+    MoviePopupComponent
   ],
   imports: [
     BrowserModule,
@@ -57,7 +60,8 @@ import { InputTextareaModule } from 'primeng/inputtextarea';
     ButtonModule,
     ToastModule,
     InputTextModule,
-    InputTextareaModule
+    InputTextareaModule,
+    VirtualScrollerModule
   ],
   providers: [
     MessageService

@@ -25,7 +25,7 @@ export interface Movie {
 }
 
 export interface moviePosts {
-  movieid: string,
+  movie_id: string | undefined,
   username: string,
   title: string,
   body: string
