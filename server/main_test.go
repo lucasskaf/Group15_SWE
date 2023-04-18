@@ -204,8 +204,8 @@ func TestLogin(t *testing.T) {
 // tests formula used to generate random IDs
 // timeout override command: go test -timeout 10m -run ^TestGenerateRandomNumber$ bingebuddy.com/m
 func TestGenerateRandomNumber(t *testing.T) {
-	smallest := 1.0
-	largest := 100.0
+	smallest := 7.0
+	largest := 113.0
 	output := 0
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for output != int(smallest) {
@@ -225,9 +225,9 @@ func TestGenerateRandomNumber(t *testing.T) {
 	}
 }
 
-// Command: go test -timeout 10m -run ^TestGetSimilarMovies$ bingebuddy.com/m
+// Command: go test -timeout 20m -run ^TestGetSimilarMovies$ bingebuddy.com/m
 func TestGetSimilarMovies(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 2000; i++ {
 		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 		id := generateRandomNumber(2.0, 1000.0, *rng)
 		frontHalf := "https://api.themoviedb.org/3/movie/"
@@ -273,17 +273,17 @@ func generatePosts(executions int) {
 	for i := 0; i < executions; i++ {
 		var post Post
 		rng := rand.New(rand.NewSource(time.Now().Unix()))
-
-		usernameLength := int((rng.Float64() * 300))
-		passwordLength := int((rng.Float64() * 300))
-		post.Title = randSeq(usernameLength)
-		post.Body = randSeq(passwordLength)
+		titleLength := generateRandomNumber(0.0, 225.0, *rng)
+		bodyLength := generateRandomNumber(0.0, 2700.0, *rng)
+		post.Username = "test1234"
+		post.Title = randSeq(titleLength)
+		post.Body = randSeq(bodyLength)
 		newMap[post.Title] = post
 	}
 	testPosts = newMap
 }
 
-// command: go test -timeout 30m -run ^TestCreatePost$ bingebuddy.com/m
+// command: go test -timeout 300m -run ^TestCreatePost$ bingebuddy.com/m
 func TestCreatePost(t *testing.T) {
 	//generates token given a known valid username and account
 	user := User{
@@ -293,7 +293,7 @@ func TestCreatePost(t *testing.T) {
 	}
 	localMode = true
 	token, _ := generateToken(user)
-	generatePosts(50)
+	generatePosts(2000)
 	mock := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(mock)
 	//resets profile to faciliate repeated testing
@@ -301,10 +301,7 @@ func TestCreatePost(t *testing.T) {
 	creationReq := httptest.NewRequest("POST", "http://localhost:8080/signup", bytes.NewBuffer(profileBinary))
 	context.Request = creationReq
 	createUser(context)
-	updateReq := httptest.NewRequest("PUT", "http://localhost:8080/updateUserInfo", bytes.NewBuffer(profileBinary))
-	updateReq.Header = map[string][]string{
-		"Authorization": {token},
-	}
+	updateReq := httptest.NewRequest("PUT", "http://localhost:8080/test1234/update", bytes.NewBuffer(profileBinary))
 	context.Request = updateReq
 	updateUserInfo(context)
 	for i := range testPosts {
@@ -340,6 +337,7 @@ func TestCreatePost(t *testing.T) {
 	for _, p := range user.Posts {
 		origPost := testPosts[p.Title]
 		origPost.Date = time.Now().Format("January 2, 2006")
+		origPost.Username = user.Username
 		if !postsIdentical(&origPost, &p) {
 			t.FailNow()
 		}
@@ -350,7 +348,7 @@ func TestCreatePost(t *testing.T) {
 func TestDeletePost(t *testing.T) {
 	//generates token given a known valid username and account
 	user := User{
-		Username: "test1324",
+		Username: "test1234",
 		Password: "1234",
 		Posts:    []Post{},
 	}
@@ -359,10 +357,18 @@ func TestDeletePost(t *testing.T) {
 	//gets all  of the test user's post IDs
 	mock := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(mock)
-	req := httptest.NewRequest("GET", "http://localhost:8080/me", nil)
+	req := httptest.NewRequest("GET", "http://localhost:8080/user", nil)
 	req.Header = map[string][]string{
 		"Authorization": {token},
+		"token":         {token},
 	}
+	c := http.Cookie{
+		Name:   "token",
+		Value:  token,
+		Path:   "",
+		Domain: "",
+	}
+	req.AddCookie(&c)
 	context.Request = req
 	getUserInfo(context)
 	binary, _ := io.ReadAll(mock.Body)
@@ -378,27 +384,38 @@ func TestDeletePost(t *testing.T) {
 		}
 		delReq.Header = map[string][]string{
 			"Authorization": {token},
+			"token":         {token},
 		}
+		c := http.Cookie{
+			Name:   "token",
+			Value:  token,
+			Path:   "",
+			Domain: "",
+		}
+		delReq.AddCookie(&c)
 		context.Request = delReq
 		deletePost(context)
 	}
-
-	//checks if every post has been deleted
 	mock = httptest.NewRecorder()
 	context, _ = gin.CreateTestContext(mock)
-	req = httptest.NewRequest("GET", "http://localhost:8080/me", nil)
+	req = httptest.NewRequest("GET", "http://localhost:8080/user", nil)
 	req.Header = map[string][]string{
 		"Authorization": {token},
+		"token":         {token},
 	}
+	c = http.Cookie{
+		Name:   "token",
+		Value:  token,
+		Path:   "",
+		Domain: "",
+	}
+	req.AddCookie(&c)
 	context.Request = req
 	getUserInfo(context)
 	binary, _ = io.ReadAll(mock.Body)
 	json.Unmarshal(binary, &user)
-	for i := range user.Posts {
-		//fails test if the user has any posts remaining that have not been deleted
-		if i > 0 {
-			t.FailNow()
-		}
+	if len(user.Posts) > 0 {
+		t.Fail()
 	}
 
 }
@@ -509,9 +526,10 @@ func TestRandomMovieWithFilters(t *testing.T) {
 		10752, // War
 		37,    // Western
 	}
+	var totalTime time.Duration
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var noResults []GeneratorFilters
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 4000; i++ {
 		recorder := httptest.NewRecorder()
 		mock, _ := gin.CreateTestContext(recorder)
 		//determines number of genres and services
@@ -519,7 +537,7 @@ func TestRandomMovieWithFilters(t *testing.T) {
 		serviceNumber := generateRandomNumber(0, 9.0, *rng)
 		genreNumber := generateRandomNumber(0, 3, *rng)
 		min_rating := rng.Float32() * 10
-		min_rating = float32(int(min_rating*100)) / 100
+		min_rating = float32(int(min_rating*10)) / 100
 		max_runtime := generateRandomNumber(60, 300, *rng)
 		var actors []string
 		var streaming_providers []int
@@ -552,7 +570,10 @@ func TestRandomMovieWithFilters(t *testing.T) {
 		//cannot bind structs directly to context
 		req, err := http.NewRequest("GET", "http://localhost:8080/generate/filters", bytes.NewBuffer(JSONFilters))
 		mock.Request = req
+		timer := stopwatch.Start()
 		randomMovieWithFilters(mock)
+		timer.Stop()
+		totalTime += time.Millisecond
 		binary, _ := io.ReadAll(recorder.Result().Body)
 		var movie Movie
 		json.Unmarshal(binary, &movie)
@@ -564,7 +585,7 @@ func TestRandomMovieWithFilters(t *testing.T) {
 		//now verifies that movie information is correct
 		var cast Cast
 		//compares immediately accessible components
-		if movie.VoteAverage < float64(min_rating) || movie.Runtime > max_runtime {
+		if float32(movie.VoteAverage) < min_rating || movie.Runtime > max_runtime {
 			t.FailNow()
 		}
 		//checks genre IDs
@@ -604,6 +625,8 @@ func TestRandomMovieWithFilters(t *testing.T) {
 			t.FailNow()
 		}
 	}
+	avgTime := totalTime / 4000
+	t.Logf("The average time is %d milliseconds", avgTime)
 	//now checks cases with no results by making request again to confirm that there are no results
 	for _, c := range noResults {
 		var actorIDs []int

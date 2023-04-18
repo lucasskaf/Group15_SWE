@@ -553,10 +553,9 @@ func randomMovie(context *gin.Context) {
 
 func randomMovieWithFilters(context *gin.Context) {
 	var filters GeneratorFilters
-	filters.MaxRuntime = 4294967295
-	filters.MinRating = 0
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	appropriate := false
+	filters.MinRating = 0.0
 	context.BindJSON(&filters)
 	//tracks visited pages and indices to avoid repeats - first map holds page numbers and second map holds page indices
 	visitedPages := make(map[int]map[int]bool)
@@ -662,13 +661,14 @@ func randomMovieWithFilters(context *gin.Context) {
 			resultPage.Results = nil
 			var result Movie
 			//continues to execute if there are no movies in the given page
-			for len(resultPage.Results) == 0 {
+			for len(resultPage.Results) == 0 || appropriate == false {
 				if visitedMovies == resultPage.TotalResults {
 					context.IndentedJSON(http.StatusOK, gin.H{"error": "No results for selected filters"})
 					return
 				}
 				if resultPage.TotalPages > 100 {
 					resultPage.TotalPages = 100
+					resultPage.TotalResults = 2000
 				}
 				randomPage := generateRandomNumber(1, float64(resultPage.TotalPages), *rng)
 				//checks if page has been visited and adds it if it hasn't
@@ -849,9 +849,14 @@ func createPost(context *gin.Context) {
 	newPost.Date = date
 
 	userDatabase := client.Database("UserInfo").Collection("UserInfo")
-	filter := bson.M{"username": username}
-	updateUserPosts := bson.M{"$push": bson.M{"posts": newPost}}
-	_, err = userDatabase.UpdateOne(context, filter, updateUserPosts)
+	filter := bson.D{{Key: "username", Value: username}}
+	//updateUserPosts := bson.M{"$push": bson.M{"$posts": newPost}}
+	update := bson.D{
+		{"$push", bson.D{
+			{"posts", newPost}, // New element to append
+		}},
+	}
+	_, err = userDatabase.UpdateOne(context, filter, update)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add post to user's post array"})
 	}
@@ -878,7 +883,7 @@ func validatePost(post *Post) (bool, string) {
 		error = "post title and body cannot be blank"
 		return valid, error
 	}
-	if len(post.Title) > 100 || len(post.Body) > 1000 {
+	if len(post.Title) > 200 || len(post.Body) > 2500 {
 		valid = false
 		error = "post title or body is too long"
 		return valid, error
