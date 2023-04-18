@@ -1,7 +1,8 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
-import { AppRoutingModule } from './app-routing.module';
+// import { AppRoutingModule } from './app-routing.module';
+import { routing } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ProfilePageModule } from './profile-page/profile-page.module';
 import { MovieGeneratorComponent } from './movie-generator/movie-generator.component';
@@ -40,7 +41,7 @@ import { MoviePopupComponent } from './movie-popup/movie-popup.component';
   imports: [
     BrowserModule,
     HttpClientModule,
-    AppRoutingModule,
+    routing,
     UserAuthModule,
     ProfilePageModule,
     BrowserAnimationsModule,

@@ -5,6 +5,7 @@ export class Emmiters {
     static authEmmiter = new EventEmitter<boolean>()
     static userData = new EventEmitter<string>()
     static isLoginOpen = new EventEmitter<boolean>()
-    static watchList = new EventEmitter<Movie[]>()
+    // static watchList = new EventEmitter<Movie[]>()
+    static watchList: Movie[] = []
     static isPopupOpen = new EventEmitter<boolean>()
 }

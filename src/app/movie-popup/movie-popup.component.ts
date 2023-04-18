@@ -22,25 +22,25 @@ export class MoviePopupComponent implements OnInit {
   didFoundPosts: boolean = false
   moviePosts: moviePosts[] = []
   isAuthenticated: boolean = false
-  userWatchedList: Movie[] = []
   isMovieWatched: boolean = false
 
   constructor(private movieGeneratorService : MovieGeneratorService,
-    private formBuilder: FormBuilder) {}
+    private formBuilder: FormBuilder) {
+      // Emmiters.watchList.subscribe(
+      //   {
+      //     next: (userList: Movie[]) => {
+      //       this.userWatchedList = userList
+      //       console.log(`SUBSRIBED AND THIS LENGHT: ${this.userWatchedList.length}`)
+      //     }
+      //   }
+      // )
+    }
 
   ngOnInit(): void {
     Emmiters.authEmmiter.subscribe(
       {
         next: (auth : boolean) => {
           this.isAuthenticated = auth
-        }
-      }
-    )
-
-    Emmiters.watchList.subscribe(
-      {
-        next: (userList: Movie[]) => {
-          this.userWatchedList = userList
         }
       }
     )
@@ -79,7 +79,7 @@ export class MoviePopupComponent implements OnInit {
   }
 
   setupMoviePopUp(){
-    if(this.userWatchedList.includes(this.generatedMovie)){
+    if(Emmiters.watchList.includes(this.generatedMovie)){
       this.isMovieWatched = true
     }
     else {
@@ -127,6 +127,10 @@ export class MoviePopupComponent implements OnInit {
         next: (resp) => {
           console.log(resp)
           this.isMovieWatched = true
+          console.log(`BEFORE ADDED: ${Emmiters.watchList.length}`)
+
+          Emmiters.watchList.push(resp)
+          console.log(`AFTER ADDED: ${Emmiters.watchList.length}`)
         },
         error: (err) => {
           console.log(err)

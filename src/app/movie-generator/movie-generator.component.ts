@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { MovieGeneratorService } from '../services/movie-generator.service';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Movie, User, moviePosts } from '../user-auth/user';
