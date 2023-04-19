@@ -1,6 +1,7 @@
 import { Component, EventEmitter, OnInit, Output, Input } from '@angular/core';
-import { MovieService } from '../../services/movie-service';
-import { MovieComponent } from '../../common/movie/movie.component';
+import { Emmiters } from 'src/app/emitters/emmiters';
+import { Movie } from 'src/app/user-auth/user';
+import { MovieGeneratorService } from '../../services/movie-generator.service';
 
 @Component({
   selector: 'app-watched',
@@ -11,16 +12,27 @@ export class WatchedComponent implements OnInit {
   @Output() openMovieAddPopup = new EventEmitter<boolean>();
   @Input() addMoviePopupStatus: boolean = false;
   
-  movies: MovieComponent[] = [];
+  movies: Movie[] = [];
 
-  constructor(private movieService: MovieService) {}
+  constructor(private movieService: MovieGeneratorService) {}
 
   ngOnInit() {
-    this.movies = this.movieService.getWatchedMovies();
+    this.movies = Emmiters.watchList;
   }
 
-  onMovieDelete(movie: MovieComponent) {
-    this.movieService.deleteWatchedMovie(movie);
+  onMovieDelete(movie: Movie) {
+    this.movieService.removeFromWatchList(movie).subscribe(
+      (response) => {
+        // remove the movie from the watchList in the backend
+        const index = this.movies.indexOf(movie);
+        if (index > -1) {
+          this.movies.splice(index, 1);
+        }
+      },
+      (error) => {
+        console.log(error);
+      }
+    )
   }
 
   public onMovieAddClick(): void {

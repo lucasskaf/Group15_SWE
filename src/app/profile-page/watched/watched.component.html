@@ -17,6 +17,63 @@
     </div>
 
     <div class="movie-container">
-        <app-movie *ngFor="let movie of movies" [movieItem]="movie" (movieDelete)="onMovieDelete($event)"></app-movie>
+        <div class="movie-item" *ngFor="let movie of movies">
+            <ng-container *ngIf="movie.poster_path">
+                <img src="https://image.tmdb.org/t/p/original{{movie.poster_path}}">
+                <button mat-mini-fab color="warn" class="delete-button" (click)="onMovieDelete(movie)">
+                    <svg enable-background="new 0 0 512 512" height="30px" id="Layer_1" version="1.1"
+                        viewBox="0 0 512 512" width="25px" xml:space="preserve" xmlns="http://www.w3.org/2000/svg"
+                        xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <g>
+                            <path
+                                d="M444.852,66.908h-99.339V47.04c0-21.943-17.792-39.736-39.736-39.736h-99.339   c-21.944,0-39.736,17.793-39.736,39.736v19.868H67.363v19.868h20.47l19.887,377.489c0,21.944,17.792,39.736,39.736,39.736h218.546   c21.944,0,39.736-17.792,39.736-39.736l19.538-377.489h19.577V66.908z M186.57,47.04c0-10.962,8.926-19.868,19.868-19.868h99.339   c10.962,0,19.868,8.906,19.868,19.868v19.868H186.57V47.04z M385.908,463.236l-0.039,0.505v0.524   c0,10.943-8.906,19.868-19.868,19.868H147.455c-10.942,0-19.868-8.925-19.868-19.868v-0.524l-0.019-0.523L107.72,86.776h297.669   L385.908,463.236z"
+                                fill="#37404D" />
+                            <rect fill="#37404D" height="317.885" width="19.868" x="246.173" y="126.511" />
+                            <polygon fill="#37404D"
+                                points="206.884,443.757 186.551,126.493 166.722,127.753 187.056,445.017  " />
+                            <polygon fill="#37404D"
+                                points="345.649,127.132 325.82,125.891 305.777,443.776 325.606,445.017  " />
+                        </g>
+                    </svg>
+                </button>
+
+                <!-- <button mat-mini-fab color="primary" class="like-button" >
+                    <svg width="25px" height="30px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M8 10V20M8 10L4 9.99998V20L8 20M8 10L13.1956 3.93847C13.6886 3.3633 14.4642 3.11604 15.1992 3.29977L15.2467 3.31166C16.5885 3.64711 17.1929 5.21057 16.4258 6.36135L14 9.99998H18.5604C19.8225 9.99998 20.7691 11.1546 20.5216 12.3922L19.3216 18.3922C19.1346 19.3271 18.3138 20 17.3604 20L8 20"
+                            stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </button>
+
+                <button mat-mini-fab color="warn" class="dislike-button">
+                    <svg width="25px" height="30px" viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M8 14V4M8 14L4 14V4.00002L8 4M8 14L13.1956 20.0615C13.6886 20.6367 14.4642 20.884 15.1992 20.7002L15.2467 20.6883C16.5885 20.3529 17.1929 18.7894 16.4258 17.6387L14 14H18.5604C19.8225 14 20.7691 12.8454 20.5216 11.6078L19.3216 5.60779C19.1346 4.67294 18.3138 4.00002 17.3604 4.00002L8 4"
+                            stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </button> -->
+
+            </ng-container>
+            <ng-container *ngIf="!movie.poster_path">
+                <h3>{{movie.title}}</h3>
+                <button mat-mini-fab color="warn" class="delete-button">
+                    <svg enable-background="new 0 0 512 512" height="30px" id="Layer_1" version="1.1"
+                        viewBox="0 0 512 512" width="25px" xml:space="preserve" xmlns="http://www.w3.org/2000/svg"
+                        xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <g>
+                            <path
+                                d="M444.852,66.908h-99.339V47.04c0-21.943-17.792-39.736-39.736-39.736h-99.339   c-21.944,0-39.736,17.793-39.736,39.736v19.868H67.363v19.868h20.47l19.887,377.489c0,21.944,17.792,39.736,39.736,39.736h218.546   c21.944,0,39.736-17.792,39.736-39.736l19.538-377.489h19.577V66.908z M186.57,47.04c0-10.962,8.926-19.868,19.868-19.868h99.339   c10.962,0,19.868,8.906,19.868,19.868v19.868H186.57V47.04z M385.908,463.236l-0.039,0.505v0.524   c0,10.943-8.906,19.868-19.868,19.868H147.455c-10.942,0-19.868-8.925-19.868-19.868v-0.524l-0.019-0.523L107.72,86.776h297.669   L385.908,463.236z"
+                                fill="#37404D" />
+                            <rect fill="#37404D" height="317.885" width="19.868" x="246.173" y="126.511" />
+                            <polygon fill="#37404D"
+                                points="206.884,443.757 186.551,126.493 166.722,127.753 187.056,445.017  " />
+                            <polygon fill="#37404D"
+                                points="345.649,127.132 325.82,125.891 305.777,443.776 325.606,445.017  " />
+                        </g>
+                    </svg>
+                </button>
+            </ng-container>
+        </div>
     </div>
 </div>
