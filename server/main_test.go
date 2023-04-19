@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+  "context"
 	"encoding/json"
 	"fmt"
 	"io"
+  "io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +19,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
   "strings"
+  "go.mongodb.org/mongo-driver/bson/primitive"
+  "go.mongodb.org/mongo-driver/mongo"
+  "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func TestRandomMovie(t *testing.T) {
@@ -479,7 +484,7 @@ func TestAddToWatchlist(t *testing.T) {
 		Value: tokenString,
 	}
 
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 1000; i++ {
 		movie := Movie{
 			OriginalTitle: fmt.Sprintf("Test Movie %d", i),
 			Overview:      fmt.Sprintf("A test movie %d", i),
@@ -522,8 +527,8 @@ func TestAddToWatchlist(t *testing.T) {
 		t.Fatalf("Failed to parse response body: %v", err)
 	}
 	length, _ := GetWatchlistLength(user.Username)
-	if length != 50 {
-		t.Errorf("Expected Watchlist length of 5 but got %d", length)
+	if length != 1000 {
+		t.Errorf("Expected Watchlist length of 1000 but got %d", length)
 	}
 }
 
@@ -548,4 +553,108 @@ func GetWatchlistLength(username string) (int, error) {
 
 func String(v string) *string {
 	return &v
+}
+
+// go test -timeout 30m -run ^TestRemoveFromWatchlist$ bingebuddy.com/m
+func TestRemoveFromWatchlist(t *testing.T) {
+	localMode = true
+	// Create a test user
+	user := User{
+		Username: "Joel1",
+		Password: "Aloma",
+	}
+
+	testUsername = user.Username
+
+	clientOptions := options.Client().ApplyURI("mongodb+srv://test:1234@cluster0.gmfsqnv.mongodb.net/test")
+	client, err := mongo.Connect(context.Background(), clientOptions)
+	if err != nil {
+		t.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+	defer client.Disconnect(context.Background())
+
+	collection := client.Database("UserInfo").Collection("UserInfo")
+	_, err = collection.InsertOne(context.Background(), user)
+	if err != nil {
+		t.Fatalf("Failed to insert user into database: %v", err)
+	}
+
+	// create a new gin context for the test
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(w)
+
+	// create a fake JWT token
+	tokenString, err := generateToken(user)
+	if err != nil {
+		t.Fatalf("Failed to generate token: %v", err)
+	}
+	cookie := &http.Cookie{
+		Name:  "token",
+		Value: tokenString,
+	}
+
+
+	for i := 0; i < 1000; i++ {
+		movie := Movie{
+			OriginalTitle: fmt.Sprintf("Test Movie %d", i),
+			Overview:      fmt.Sprintf("A test movie %d", i),
+			ReleaseDate:   String("2023-04-18"),
+			Title:         fmt.Sprintf("Title %d", i),
+		}
+
+		// convert the movie data to JSON
+		jsonMovies, err := json.Marshal(movie)
+		if err != nil {
+			t.Fatalf("Failed to marshal movie data: %v", err)
+		}
+
+		// Set the token and JSON request body in the request headers
+		req, err := http.NewRequest("POST", "/"+user.Username+"/add", bytes.NewBuffer(jsonMovies))
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(cookie)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+
+		// Bind the request to the gin context
+		context.Request = req
+
+		// call the addToWatchlist function
+		addToWatchlist(context)
+	}
+
+	for i := 0; i < 1000; i++ {
+		removeMovie := Movie{
+			OriginalTitle: fmt.Sprintf("Test Movie %d", i),
+			Overview:      fmt.Sprintf("A test movie %d", i),
+			ReleaseDate:   String("2023-04-18"),
+			Title:         fmt.Sprintf("Title %d", i),
+		}
+
+		jsonMovie, err := json.Marshal(removeMovie)
+		if err != nil {
+			t.Fatalf("Failed to marshal movie data: %v", err)
+		}
+
+		// now remove the movie from the watchlist
+		// Set the token and JSON request body in the request headers
+		req, err := http.NewRequest("DELETE", "/"+testUsername+"/watchlist/remove", bytes.NewBuffer(jsonMovie))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+tokenString)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+
+		// // Bind the request to the gin context
+		context.Request = req
+
+		// // call the removeFromWatchlist function
+		removeFromWatchlist(context)
+	}
+	
+	length, _ := GetWatchlistLength(user.Username)
+	if length != 0 {
+		t.Errorf("Expected watchlist to be empty but found %d movies", length)
+	}
 }
