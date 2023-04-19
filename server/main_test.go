@@ -2,15 +2,17 @@ package main
 
 import (
 	"bytes"
-  "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-  "io/ioutil"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
+
 	"testing"
 	"time"
 
@@ -18,10 +20,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-  "strings"
-  "go.mongodb.org/mongo-driver/bson/primitive"
-  "go.mongodb.org/mongo-driver/mongo"
-  "go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func TestRandomMovie(t *testing.T) {
