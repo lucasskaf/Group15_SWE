@@ -23,13 +23,16 @@
       "ES2022",
       "dom"
     ],
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "paths": {
+      "primeng/*": ["node_modules/primeng-lts/*"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true,
-    // "allowJS": true
+    //"allowJS": true
   }
 }

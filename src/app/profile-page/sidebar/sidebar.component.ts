@@ -8,7 +8,9 @@ import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 export class SidebarComponent implements OnInit {
 
   @Output() isClosed = new EventEmitter<boolean>();
-  @Input() isOpen : boolean = false
+  @Input() isOpen : boolean = false;
+  isAddMoviePopupOpen: boolean = false;
+  isAddPostPopupOpen: boolean = false;
 
   constructor() { }
 
@@ -16,8 +18,11 @@ export class SidebarComponent implements OnInit {
 
   }
 
-  toggleSidenav() {
-    this.isOpen = !this.isOpen
-    this.isClosed.emit(this.isOpen)
+  public toggleAddMoviePopupStatus(event: boolean): void {
+    this.isAddMoviePopupOpen = event;
+  }
+
+  public toggleAddPostPopupStatus(event: boolean): void {
+    this.isAddPostPopupOpen = event;
   }
 }

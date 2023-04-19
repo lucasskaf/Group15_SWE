@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css?family=Montserrat:400,800');
+
+* {
+    font-family: 'Montserrat', sans-serif;
+}
+
 h2 {
     width: 50px;
     margin: 0;
@@ -14,6 +20,17 @@ h2 span {
     font-weight: bold;
 }
 
+p {
+    display: inline;
+    color: #FFF;
+    font-size: 18px;
+    margin-right: 45px;
+}
+
+p span {
+    font-weight: 600;
+}
+
 .nav-bar {
     padding: 15px 6%;
     display: flex;
@@ -22,11 +39,11 @@ h2 span {
     background-color: #330C2F;
 }
 
-#movie-icon, #login-icon {
+#movie-icon, #login-icon, #profile-icon {
     margin-right: 10px;
 }
 
-.nav-bar .bb-button#movies-button {
+.nav-bar .bb-button#movies-button,  .nav-bar .bb-button#profile-button{
     margin-right: 35px;
 }
 

@@ -5,6 +5,9 @@ import { User } from '../user';
 import { FormBuilder, Validators } from '@angular/forms';
 
 import { LoginRegisterService } from 'src/app/services/login-register.service';
+import { Router } from '@angular/router';
+import { Emmiters } from 'src/app/emitters/emmiters';
+import { NgToastService } from 'ng-angular-popup'
 
 @Component({
   selector: 'bb-login-register',
@@ -12,13 +15,19 @@ import { LoginRegisterService } from 'src/app/services/login-register.service';
   styleUrls: ['./login-register.component.css']
 })
 export class LoginRegisterComponent implements OnInit {
-  @Output() isClosed = new EventEmitter()
-  @Input() isOpen : boolean = false
+  isLoginOpen: boolean = false
+
+  getLoginStatus = Emmiters.isLoginOpen.subscribe((resp) => {
+    this.isLoginOpen = resp
+  })
 
   formSignUp
+  formSignIn
 
   constructor(private formBuilder : FormBuilder,
-    private loginRegisterService : LoginRegisterService) {}
+    private loginRegisterService : LoginRegisterService,
+    private router : Router,
+    private toast: NgToastService) {}
   
   ngOnInit(): void {
     const loginAnimation = loginInteraction()
@@ -27,32 +36,58 @@ export class LoginRegisterComponent implements OnInit {
       username: this.formBuilder.control('', Validators.required),
       password: this.formBuilder.control('', Validators.required)
     })
+
+    this.formSignIn = this.formBuilder.group({
+      username: this.formBuilder.control('', Validators.required),
+      password: this.formBuilder.control('', Validators.required)
+    })
+
+    // Verify if token is already present in cookies
+    this.loginRegisterService.getUser().subscribe(
+      {
+        next: (userInfo) => {
+          console.log('PRESENT')
+          Emmiters.authEmmiter.emit(true)
+          Emmiters.userData.emit(userInfo.username)
+        },
+        error: (err) => {
+          console.log('Error')
+        }
+      }
+    )
   }
 
-  toogleLogin() {
-    this.isOpen = !this.isOpen
-    this.isClosed.emit(this.isOpen)
+  closeLogin() {
+    Emmiters.isLoginOpen.emit(false)
   }
 
   onSubmit(user : User){
-    console.log(`Input User:`)
-    console.log(user)
-
-    const postUser : User = {
-      "username": "",
-      "password" : ""
-    }
-
-    postUser.username = user.username
-    postUser.password = user.password
-
-    console.log(`Post User:`)
-    console.log(postUser)
-
-    this.loginRegisterService.createUser(postUser).subscribe((resp) => {
+    this.loginRegisterService.createUser(user).subscribe((resp) => {
       console.log(resp)
+      this.router.navigate(['/'])
     })
 
-    this.isOpen = false
+    this.closeLogin()
+  }
+
+  loginUser(user : User) {
+    this.loginRegisterService.loginUser(user).subscribe(
+     { 
+      next: (resp) => {
+        this.loginRegisterService.getUser().subscribe({
+          next: (userInfo) => {
+            Emmiters.authEmmiter.emit(true)
+            Emmiters.isLoginOpen.emit(false)
+            Emmiters.userData.emit(userInfo.username)
+            this.toast.success({detail: "Success", summary: "You were logged in!", duration: 4000})
+          }
+        })
+      },
+      error: (err) => {
+        Emmiters.authEmmiter.emit(false)
+        console.log(err)
+      }
+    }
+    )
   }
 }

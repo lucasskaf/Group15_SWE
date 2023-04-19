@@ -1,7 +1,7 @@
-<div [ngClass]="{'modal-bg': true, 'closed': isOpen === false}">
-  <div [ngClass]="{'container': true, 'closed': isOpen === false}" id="container">
+<div [ngClass]="{'modal-bg': true, 'closed': isLoginOpen === false}">
+  <div [ngClass]="{'container': true, 'closed': isLoginOpen=== false}" id="container">
     <button
-      (click)="toogleLogin()"
+      (click)="closeLogin()"
       id="closeButton"
       mat-icon-button
       aria-label="Example icon button with a vertical three dot icon"
@@ -11,19 +11,19 @@
     <div class="form-container sign-up-container">
       <form [formGroup]="formSignUp" (ngSubmit)="onSubmit(formSignUp.value)" action="#">
         <h1>Create Account</h1>
-        <input type="text" placeholder="Name" formControlName="username" />
+        <input type="text" placeholder="Name" formControlName="username" required/>
         <!-- <input type="email" placeholder="Email" /> -->
-        <input type="password" placeholder="Password" formControlName="password"/>
+        <input type="password" placeholder="Password" formControlName="password" required/>
         <button type="submit">Sign Up</button>
       </form>
     </div>
     <div class="form-container sign-in-container">
-      <form action="#">
+      <form [formGroup]="formSignIn" (ngSubmit)="loginUser(formSignIn.value)" action="#">
         <h2><span id="welcome">Welcome to </span> <br> <span id="binge">Binge </span><span id="buddy">Buddy</span></h2>
-        <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
+        <input type="email" placeholder="Email" formControlName="username"/>
+        <input type="password" placeholder="Password" formControlName="password"/>
         <!-- <a href="#">Forgot your password?</a> -->
-        <button>Sign In</button>
+        <button id="signin" type="submit">Sign In</button>
       </form>
     </div>
     <div class="overlay-container">
@@ -42,3 +42,4 @@
     </div>
   </div>  
 </div>
+<lib-ng-toast></lib-ng-toast>
