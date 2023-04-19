@@ -8,7 +8,6 @@ import { LoginRegisterService } from 'src/app/services/login-register.service';
 import { Router } from '@angular/router';
 import { Emmiters } from 'src/app/emitters/emmiters';
 import { NgToastService } from 'ng-angular-popup'
-import { NgToastService } from 'ng-angular-popup'
 
 @Component({
   selector: 'bb-login-register',

@@ -1,6 +1,5 @@
 import { EventEmitter } from "@angular/core";
 import { Movie } from "../user-auth/user";
-import { Movie } from "../user-auth/user";
 
 export class Emmiters {
     static authEmmiter = new EventEmitter<boolean>()

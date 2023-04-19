@@ -133,14 +133,10 @@ var smallest float64
 // toggles database mode for testing - local has no speed limit
 var localMode bool
 
-// test username for removewatchlist
-var testUsername string
-
 // this is the post struct that contains all the different fields for a certain post
 type Post struct {
 	PostID   primitive.ObjectID `json:"id"`
 	MovieID  string             `json:"movie_id"`
-	Rating   float64            `json:"rating"`
 	Username string             `json:"username"`
 	Title    string             `json:"title"`
 	Body     string             `json:"body"`
@@ -368,7 +364,6 @@ func addToWatchlist(context *gin.Context) {
 	sanitizeMovieFields(&movie, nil)
 	if movie.OriginalTitle == "" {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
-		return
 	}
 	filter := bson.D{{Key: "username", Value: username}}
 	var updatedUser User
@@ -407,16 +402,6 @@ func removeFromWatchlist(context *gin.Context) {
 	}
 	//should take in movie object
 	username := context.Param("username")
-
-	if localMode {
-		username = testUsername
-	}
-
-	if username == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username"})
-		return
-	}
-
 	client := connectToDB()
 	database := client.Database("UserInfo").Collection("UserInfo")
 	var movie Movie
@@ -425,35 +410,15 @@ func removeFromWatchlist(context *gin.Context) {
 		return //catches null requests and throws error.
 	}
 	//filter := bson.D{{"username.watchlist", movie.Title}}
-	if !localMode {
-		filter := bson.D{{Key: "username", Value: username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
-		result := database.FindOneAndDelete(context, filter)
-		if result == nil {
-			fmt.Println("ERORR")
-			context.IndentedJSON(http.StatusBadRequest, result)
-			client.Disconnect(context)
-		}
-		context.IndentedJSON(http.StatusOK, result)
+	filter := bson.D{{Key: "username", Value: username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
+	result := database.FindOneAndDelete(context, filter)
+	//returns error if deletion fails
+	if result == nil {
+		context.IndentedJSON(http.StatusBadRequest, result)
 		client.Disconnect(context)
 	}
-	if localMode {
-		filter := bson.M{"username": username}
-		update := bson.M{"$pull": bson.M{"watchlist": movie}}
-		result, err := database.UpdateOne(context, filter, update)
-		if result == nil {
-			fmt.Println("ERORR")
-			context.IndentedJSON(http.StatusBadRequest, result)
-			client.Disconnect(context)
-		}
-		if err != nil {
-			fmt.Println("ERROR")
-			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			client.Disconnect(context)
-			return
-		}
-		context.IndentedJSON(http.StatusOK, result)
-		client.Disconnect(context)
-	}
+	context.IndentedJSON(http.StatusOK, result)
+	client.Disconnect(context)
 }
 
 func removeUser(context *gin.Context) {
@@ -839,7 +804,6 @@ func createPost(context *gin.Context) {
 		"title":    newPost.Title,
 		"body":     newPost.Body,
 		"date":     date,
-		"rating":   newPost.Rating,
 	})
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
@@ -883,11 +847,6 @@ func validatePost(post *Post) (bool, string) {
 	if len(post.Title) > 100 || len(post.Body) > 1000 {
 		valid = false
 		error = "post title or body is too long"
-		return valid, error
-	}
-	if post.Rating < 0 || post.Rating > 10 {
-		valid = false
-		error = "rating value must be between 0 and 10"
 		return valid, error
 	}
 	return valid, error
@@ -1022,10 +981,9 @@ func updatePost(context *gin.Context) {
 	updatedPost.Date = time.Now().Format("January 2, 2006")
 	updateMade := bson.M{
 		"$set": bson.M{
-			"title":  updatedPost.Title,
-			"body":   updatedPost.Body,
-			"date":   updatedPost.Date,
-			"rating": updatedPost.Rating,
+			"title": updatedPost.Title,
+			"body":  updatedPost.Body,
+			"date":  updatedPost.Date,
 		},
 	}
 
@@ -1038,9 +996,8 @@ func updatePost(context *gin.Context) {
 	userDatabase := client.Database("UserInfo").Collection("UserInfo")
 	updateUserPosts := bson.M{
 		"$set": bson.M{
-			"posts.$.title":  updatedPost.Title,
-			"posts.$.body":   updatedPost.Body,
-			"posts.$.rating": updatedPost.Rating,
+			"posts.$.title": updatedPost.Title,
+			"posts.$.body":  updatedPost.Body,
 		},
 	}
 	updateFilter := bson.M{"username": username, "posts.postid": objectID}
@@ -1085,7 +1042,7 @@ func getPosts(context *gin.Context) {
 			panic(err)
 		}
 		if len(posts) == 0 {
-			context.IndentedJSON(http.StatusOK, gin.H{"error": "No posts found"})
+			context.IndentedJSON(http.StatusNotFound, gin.H{"error": "No posts found"})
 		} else {
 			//reverses order of posts before return - code from https://golangprojectstructure.com/reversing-go-slice-array/#concurrent-reordering
 			for i, j := 0, len(posts)-1; i < j; i, j = i+1, j-1 {
@@ -1304,11 +1261,11 @@ func main() {
 	router.POST("/generate/filters", randomMovieWithFilters)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
-	router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
 	router.POST("/posts", createPost)
 	router.DELETE("/posts/:postID", deletePost)
 	router.PUT("/posts/:postID", updatePost)
 	router.PUT("/:username/update", updateUserInfo)
 	router.DELETE("/:username/delete", removeUser)
+	router.POST("/:username/watchlist/remove", removeFromWatchlist)
 	router.Run("localhost:8080")
 }

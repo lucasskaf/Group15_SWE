@@ -1,14 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Movie, moviePosts } from '../user-auth/user';
-import { Movie, moviePosts } from '../user-auth/user';
 import { map } from 'rxjs';
 
-interface movieFilters {
-  actors: string[],
-  max_runtime: number,
-  genres: number[],
-  streaming_providers: number[]
 interface movieFilters {
   actors: string[],
   max_runtime: number,
