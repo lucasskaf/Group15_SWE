@@ -15,6 +15,8 @@ export class HomePageComponent implements OnInit {
   isLoginOpen = false
   isAuthenticated
   username = ""
+  isAuthenticated
+  username = ""
   message = 'Home Page'
   movieList: Movie[] = []
   userWatchlist: Movie[] = []

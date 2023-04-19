@@ -7,6 +7,10 @@ const appRoutes: Routes = [
   { path: 'home', component: HomePageComponent, },
   { path: 'profile', component: MainComponent, canActivate: [AuthGuard]},
   { path: '', pathMatch: 'full', redirectTo: 'home' }
+const appRoutes: Routes = [
+  { path: 'home', component: HomePageComponent },
+  { path: 'profile', component: MainComponent },
+  { path: '', pathMatch: 'full', redirectTo: 'home' }
 ]
 
 export const routing = RouterModule.forRoot(appRoutes);
