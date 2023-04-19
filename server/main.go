@@ -137,6 +137,7 @@ var localMode bool
 type Post struct {
 	PostID   primitive.ObjectID `json:"id"`
 	MovieID  string             `json:"movie_id"`
+  Rating   float64            `json:"rating"`
 	Username string             `json:"username"`
 	Title    string             `json:"title"`
 	Body     string             `json:"body"`
@@ -803,6 +804,7 @@ func createPost(context *gin.Context) {
     "title":    newPost.Title,
     "body":     newPost.Body,
     "date":     date,
+    "rating":   newPost.Rating,
   })
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
@@ -848,6 +850,11 @@ func validatePost(post *Post) (bool, string) {
 		error = "post title or body is too long"
 		return valid, error
 	}
+  if post.Rating < 0 || post.Rating > 10 {
+    valid = false
+    error = "rating value must be between 0 and 10"
+    return valid, error
+  }
 	return valid, error
 }
 
@@ -983,6 +990,7 @@ func updatePost(context *gin.Context) {
 			"title": updatedPost.Title,
 			"body":  updatedPost.Body,
 			"date":  updatedPost.Date,
+      "rating": updatedPost.Rating,
 		},
 	}
 
@@ -997,6 +1005,7 @@ func updatePost(context *gin.Context) {
 		"$set": bson.M{
 			"posts.$.title": updatedPost.Title,
 			"posts.$.body":  updatedPost.Body,
+      "posts.$.rating": updatedPost.Rating,
 		},
 	}
 	updateFilter := bson.M{"username": username, "posts.postid": objectID}
