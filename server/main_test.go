@@ -1,29 +1,28 @@
 package main
 
 import (
-  "bytes"
-  "context"
-  "encoding/json"
-  "fmt"
-  "io"
-  "io/ioutil"
-  "math/rand"
-  "net/http"
-  "net/http/httptest"
-  "reflect"
-  "strings"
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"strings"
 
-  "testing"
-  "time"
+	"testing"
+	"time"
 
-  "github.com/bradhe/stopwatch"
-  "github.com/gin-gonic/gin"
-  "github.com/stretchr/testify/assert"
-  "go.mongodb.org/mongo-driver/bson"
-  "go.mongodb.org/mongo-driver/bson/primitive"
-  "go.mongodb.org/mongo-driver/mongo"
-  "go.mongodb.org/mongo-driver/mongo/options"
-
+	"github.com/bradhe/stopwatch"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func TestRandomMovie(t *testing.T) {
@@ -352,6 +351,7 @@ func TestDeletePost(t *testing.T) {
 
 }
 
+// go test -timeout 30m -run ^TestUpdatePost$ bingebuddy.com/m
 func TestUpdatePost(t *testing.T) {
   localMode = true
   // Create a test user
@@ -446,5 +446,216 @@ func TestUpdatePost(t *testing.T) {
     		t.Errorf("Failed to update post body: got %s, expected %s", updatedPostFromDB.Body, updatedPost.Body)
 		}
 	}
+}
 
+// go test -timeout 30m -run ^TestAddToWatchlist$ bingebuddy.com/m
+func TestAddToWatchlist(t *testing.T) {
+	localMode = true
+	// Create a test user
+	user := User{
+		Username: "Joel5",
+		Password: "Aloma",
+	}
+
+	clientOptions := options.Client().ApplyURI("mongodb+srv://test:1234@cluster0.gmfsqnv.mongodb.net/test")
+	client, err := mongo.Connect(context.Background(), clientOptions)
+	if err != nil {
+		t.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+	defer client.Disconnect(context.Background())
+
+	collection := client.Database("UserInfo").Collection("UserInfo")
+	_, err = collection.InsertOne(context.Background(), user)
+	if err != nil {
+		t.Fatalf("Failed to insert user into database: %v", err)
+	}
+
+	// create a new gin context for the test
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(w)
+
+	// create a fake JWT token
+	tokenString, err := generateToken(user)
+	if err != nil {
+		t.Fatalf("Failed to generate token: %v", err)
+	}
+	cookie := &http.Cookie{
+		Name:  "token",
+		Value: tokenString,
+	}
+
+	for i := 0; i < 1000; i++ {
+		movie := Movie{
+			OriginalTitle: fmt.Sprintf("Test Movie %d", i),
+			Overview:      fmt.Sprintf("A test movie %d", i),
+			ReleaseDate:   String("2023-04-18"),
+		}
+
+		// convert the movie data to JSON
+		jsonMovies, err := json.Marshal(movie)
+		if err != nil {
+			t.Fatalf("Failed to marshal movie data: %v", err)
+		}
+
+		// Set the token and JSON request body in the request headers
+		req, err := http.NewRequest("POST", "/"+user.Username+"/add", bytes.NewBuffer(jsonMovies))
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(cookie)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+
+		// Bind the request to the gin context
+		context.Request = req
+
+		// call the addToWatchlist function
+		addToWatchlist(context)
+	}
+
+	// check if the response status code is OK
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status code %d but got %d", http.StatusOK, w.Code)
+	}
+
+	if len(w.Body.Bytes()) == 0 {
+		t.Fatal("Empty response body")
+	}
+
+	// check if the response body contains the updated user with the added movies in its Watchlist
+	var updatedUser User
+	if err := json.NewDecoder(w.Body).Decode(&updatedUser); err != nil {
+		t.Fatalf("Failed to parse response body: %v", err)
+	}
+	length, _ := GetWatchlistLength(user.Username)
+	if length != 1000 {
+		t.Errorf("Expected Watchlist length of 1000 but got %d", length)
+	}
+}
+
+func GetWatchlistLength(username string) (int, error) {
+	clientOptions := options.Client().ApplyURI("mongodb+srv://test:1234@cluster0.gmfsqnv.mongodb.net/test")
+	client, err := mongo.Connect(context.Background(), clientOptions)
+	if err != nil {
+		return 0, fmt.Errorf("failed to connect to MongoDB: %v", err)
+	}
+	defer client.Disconnect(context.Background())
+
+	collection := client.Database("UserInfo").Collection("UserInfo")
+	filter := bson.M{"username": username}
+	var user User
+	err = collection.FindOne(context.Background(), filter).Decode(&user)
+	if err != nil {
+		return 0, fmt.Errorf("failed to find user %s: %v", username, err)
+	}
+
+	return len(user.Watchlist), nil
+}
+
+func String(v string) *string {
+	return &v
+}
+
+// go test -timeout 30m -run ^TestRemoveFromWatchlist$ bingebuddy.com/m
+func TestRemoveFromWatchlist(t *testing.T) {
+	localMode = true
+	// Create a test user
+	user := User{
+		Username: "Joel1",
+		Password: "Aloma",
+	}
+
+	testUsername = user.Username
+
+	clientOptions := options.Client().ApplyURI("mongodb+srv://test:1234@cluster0.gmfsqnv.mongodb.net/test")
+	client, err := mongo.Connect(context.Background(), clientOptions)
+	if err != nil {
+		t.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+	defer client.Disconnect(context.Background())
+
+	collection := client.Database("UserInfo").Collection("UserInfo")
+	_, err = collection.InsertOne(context.Background(), user)
+	if err != nil {
+		t.Fatalf("Failed to insert user into database: %v", err)
+	}
+
+	// create a new gin context for the test
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(w)
+
+	// create a fake JWT token
+	tokenString, err := generateToken(user)
+	if err != nil {
+		t.Fatalf("Failed to generate token: %v", err)
+	}
+	cookie := &http.Cookie{
+		Name:  "token",
+		Value: tokenString,
+	}
+
+
+	for i := 0; i < 1000; i++ {
+		movie := Movie{
+			OriginalTitle: fmt.Sprintf("Test Movie %d", i),
+			Overview:      fmt.Sprintf("A test movie %d", i),
+			ReleaseDate:   String("2023-04-18"),
+			Title:         fmt.Sprintf("Title %d", i),
+		}
+
+		// convert the movie data to JSON
+		jsonMovies, err := json.Marshal(movie)
+		if err != nil {
+			t.Fatalf("Failed to marshal movie data: %v", err)
+		}
+
+		// Set the token and JSON request body in the request headers
+		req, err := http.NewRequest("POST", "/"+user.Username+"/add", bytes.NewBuffer(jsonMovies))
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(cookie)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+
+		// Bind the request to the gin context
+		context.Request = req
+
+		// call the addToWatchlist function
+		addToWatchlist(context)
+	}
+
+	for i := 0; i < 1000; i++ {
+		removeMovie := Movie{
+			OriginalTitle: fmt.Sprintf("Test Movie %d", i),
+			Overview:      fmt.Sprintf("A test movie %d", i),
+			ReleaseDate:   String("2023-04-18"),
+			Title:         fmt.Sprintf("Title %d", i),
+		}
+
+		jsonMovie, err := json.Marshal(removeMovie)
+		if err != nil {
+			t.Fatalf("Failed to marshal movie data: %v", err)
+		}
+
+		// now remove the movie from the watchlist
+		// Set the token and JSON request body in the request headers
+		req, err := http.NewRequest("DELETE", "/"+testUsername+"/watchlist/remove", bytes.NewBuffer(jsonMovie))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+tokenString)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+
+		// // Bind the request to the gin context
+		context.Request = req
+
+		// // call the removeFromWatchlist function
+		removeFromWatchlist(context)
+	}
+	
+	length, _ := GetWatchlistLength(user.Username)
+	if length != 0 {
+		t.Errorf("Expected watchlist to be empty but found %d movies", length)
+	}
 }
