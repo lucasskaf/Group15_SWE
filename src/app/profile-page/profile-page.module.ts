@@ -4,7 +4,7 @@ import { MatToolbarModule} from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { NavbarComponent } from './navbar/navbar.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { SidebarComponent } from './sidebar/sidebar.component';
+// import { SidebarComponent } from './sidebar/sidebar.component';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
@@ -21,7 +21,7 @@ import { routing } from '../app-routing.module';
 
 @NgModule({
   declarations: [
-    SidebarComponent,
+    // SidebarComponent,
     MainComponent,
     WatchedComponent,
     PostsComponent,
@@ -51,7 +51,7 @@ import { routing } from '../app-routing.module';
     MatIconModule,
     MainComponent,
     NavbarComponent,
-    SidebarComponent
+    // SidebarComponent
   ]
 })
 export class ProfilePageModule { }

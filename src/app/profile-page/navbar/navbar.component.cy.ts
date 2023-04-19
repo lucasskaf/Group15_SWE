@@ -1,19 +1,15 @@
 import { NavbarComponent } from "./navbar.component";
 
 describe('NavbarComponent', () => {
-    it('can mount', () => {
-        cy.mount(NavbarComponent)
+    beforeEach(() => {
+        cy.mount(NavbarComponent);
     })
 
-    it('clicks the sidenav button', () => {
-        cy.mount(NavbarComponent, {
-            componentProperties: {
-                openSidenav: {
-                    emit: cy.spy().as('onClickSpy')
-                } as any
-            }
-        })
-        cy.get('#sidenav-button').click();
-        cy.get('@onClickSpy').should('have.been.called')
-    })
+    it('clicks on the home button', () => {
+        cy.get('#home-button').click();
+    });
+
+    it('clicks on the logout button', () => {
+        cy.get('#logout-button').click();
+    });
 })
