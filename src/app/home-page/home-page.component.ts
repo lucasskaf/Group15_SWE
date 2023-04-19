@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Emmiters } from '../emitters/emmiters';
 import { MovieGeneratorService } from '../services/movie-generator.service';
+import { LoginRegisterService } from '../services/login-register.service';
 import { Movie } from '../user-auth/user';
 
 
@@ -19,7 +20,8 @@ export class HomePageComponent implements OnInit {
   userWatchlist: Movie[] = []
 
   constructor(
-    private movieGeneratorService: MovieGeneratorService
+    private movieGeneratorService: MovieGeneratorService,
+    private loginService: LoginRegisterService
   ){}
 
   ngOnInit(): void {
@@ -37,10 +39,12 @@ export class HomePageComponent implements OnInit {
       {
         next: (auth : boolean) => {
           this.isAuthenticated = auth
+          this.loginService.setUserAuth(this.isAuthenticated);
           this.message = 'Hey '
         }
       }
     )
+
 
     // this.generatorForm = this.formBuilder.group({
     //   actors: this.actorCtrl,
@@ -70,5 +74,8 @@ export class HomePageComponent implements OnInit {
       }
     )
   }
-  
+
+  setUserAuth(auth: boolean) {
+    this.isAuthenticated = auth;
+  }
 }

@@ -55,6 +55,7 @@ export class LoginRegisterComponent implements OnInit {
         },
         error: (err) => {
           console.log('Error')
+          Emmiters.authEmmiter.emit(false)
         }
       }
     )
