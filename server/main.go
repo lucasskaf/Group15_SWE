@@ -133,6 +133,9 @@ var smallest float64
 // toggles database mode for testing - local has no speed limit
 var localMode bool
 
+// test username for removewatchlist
+var testUsername string
+
 // this is the post struct that contains all the different fields for a certain post
 type Post struct {
 	PostID   primitive.ObjectID `json:"id"`
@@ -403,6 +406,16 @@ func removeFromWatchlist(context *gin.Context) {
 	}
 	//should take in movie object
 	username := context.Param("username")
+  
+  if localMode {
+    username = testUsername
+  }
+  
+  if username == "" {
+    context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username"})
+    return
+  }
+  
 	client := connectToDB()
 	database := client.Database("UserInfo").Collection("UserInfo")
 	var movie Movie
@@ -411,15 +424,35 @@ func removeFromWatchlist(context *gin.Context) {
 		return //catches null requests and throws error.
 	}
 	//filter := bson.D{{"username.watchlist", movie.Title}}
-	filter := bson.D{{Key: "username", Value: username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
-	result := database.FindOneAndDelete(context, filter)
-	//returns error if deletion fails
-	if result == nil {
-		context.IndentedJSON(http.StatusBadRequest, result)
+	if !localMode {
+		filter := bson.D{{Key: "username", Value: username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
+		result := database.FindOneAndDelete(context, filter)
+		if result == nil {
+			fmt.Println("ERORR")
+			context.IndentedJSON(http.StatusBadRequest, result)
+			client.Disconnect(context)
+		}
+		context.IndentedJSON(http.StatusOK, result)
 		client.Disconnect(context)
 	}
-	context.IndentedJSON(http.StatusOK, result)
-	client.Disconnect(context)
+	if localMode {
+		filter := bson.M{"username": username}
+		update := bson.M{"$pull": bson.M{"watchlist": movie}}
+		result, err := database.UpdateOne(context, filter, update)
+		if result == nil {
+			fmt.Println("ERORR")
+			context.IndentedJSON(http.StatusBadRequest, result)
+			client.Disconnect(context)
+		}
+		if err != nil {
+			fmt.Println("ERROR")
+			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			client.Disconnect(context)
+			return
+		}
+		context.IndentedJSON(http.StatusOK, result)
+		client.Disconnect(context)
+	}
 }
 
 func removeUser(context *gin.Context) {
@@ -1270,11 +1303,11 @@ func main() {
 	router.POST("/generate/filters", randomMovieWithFilters)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
+  router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
 	router.POST("/posts", createPost)
 	router.DELETE("/posts/:postID", deletePost)
   router.PUT("/posts/:postID", updatePost)
 	router.PUT("/:username/update", updateUserInfo)
 	router.DELETE("/:username/delete", removeUser)
-	router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
 	router.Run("localhost:8080")
 }
