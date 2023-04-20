@@ -52,7 +52,7 @@ export class LoginRegisterComponent implements OnInit {
           Emmiters.isLoginOpen.emit(false)            
           Emmiters.watchList = userInfo.watchlist
           userInfo.watchlist.forEach((value)=>{
-            console.log(`WATCHLIST ITEM ID: ${value.id}`)
+            // console.log(`WATCHLIST ITEM ID: ${value.id}`)
           })
 
           Emmiters.userPosts = userInfo.posts

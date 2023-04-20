@@ -382,13 +382,18 @@ func addToWatchlist(context *gin.Context) {
 }
 
 func removeFromWatchlist(context *gin.Context) {
-	cookie, _ := context.Cookie("token")
 	// header := context.GetHeader("Authorization") // gets "Bearer token"
+	// if header == "" {                            // checks if the authorization header is empty or not and throws error if it is
+	// 	context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+	// 	return
+	// }
+	cookie, _ := context.Cookie("token")
+
 	if cookie == "" { // checks if the authorization header is empty or not and throws error if it is
 		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
 		return
 	}
-	// headerToken := strings.ReplaceAll(header, "Bearer ", "") // gets the token only, which is everything after "Bearer"
+	// headerToken := strings.ReplaceAll(cookie, "Bearer ", "") // gets the token only, which is everything after "Bearer"
 	// Now we parse through the token and check that it is valid, if not, then error
 	userToken, err := jwt.Parse(cookie, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -402,6 +407,12 @@ func removeFromWatchlist(context *gin.Context) {
 	}
 	//should take in movie object
 	username := context.Param("username")
+
+	if username == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username"})
+		return
+	}
+
 	client := connectToDB()
 	database := client.Database("UserInfo").Collection("UserInfo")
 	var movie Movie
@@ -409,16 +420,38 @@ func removeFromWatchlist(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
 	}
-	//filter := bson.D{{"username.watchlist", movie.Title}}
-	filter := bson.D{{Key: "username", Value: username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
-	result := database.FindOneAndDelete(context, filter)
-	//returns error if deletion fails
-	if result == nil {
-		context.IndentedJSON(http.StatusBadRequest, result)
+	if !localMode {
+		filter := bson.M{"username": username}
+		update := bson.M{"$pull": bson.M{"watchlist": movie}}
+		result, _ := database.UpdateOne(context, filter, update)
+		if result.ModifiedCount == 0 {
+			fmt.Println("Movie does not exist")
+			context.IndentedJSON(http.StatusBadRequest, result)
+			client.Disconnect(context)
+			return
+		}
+	}
+	context.IndentedJSON(http.StatusOK, movie)
+	client.Disconnect(context)
+
+	if localMode == true {
+		filter := bson.M{"username": username}
+		update := bson.M{"$pull": bson.M{"watchlist": movie}}
+		result, err := database.UpdateOne(context, filter, update)
+		if result == nil {
+			fmt.Println("ERORR")
+			context.IndentedJSON(http.StatusBadRequest, result)
+			client.Disconnect(context)
+		}
+		if err != nil {
+			fmt.Println("ERROR")
+			context.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			client.Disconnect(context)
+			return
+		}
+		context.IndentedJSON(http.StatusOK, result)
 		client.Disconnect(context)
 	}
-	context.IndentedJSON(http.StatusOK, result)
-	client.Disconnect(context)
 }
 
 func removeUser(context *gin.Context) {
@@ -855,14 +888,21 @@ func validatePost(post *Post) (bool, string) {
 
 // this function deletes a post for the logged in user
 func deletePost(context *gin.Context) {
-	header := context.GetHeader("Authorization")
-	if header == "" {
+
+	// header := context.GetHeader("Authorization")
+	// if header == "" {
+	// 	context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+	// 	return
+	// }
+
+	// headerToken := strings.ReplaceAll(header, "Bearer ", "")
+	cookie, _ := context.Cookie("token")
+
+	if cookie == "" { // checks if the authorization header is empty or not and throws error if it is
 		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
 		return
 	}
-
-	headerToken := strings.ReplaceAll(header, "Bearer ", "")
-	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+	userToken, err := jwt.Parse(cookie, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
 		}

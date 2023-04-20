@@ -48,8 +48,8 @@ export class WatchedComponent implements OnInit {
     });
   }
 
-  public onMovieAddClick(): void {
-    this.openMovieAddPopup.emit(!this.addMoviePopupStatus);
-    this.addMoviePopupStatus = !this.addMoviePopupStatus;
-  }
+  // public onMovieAddClick(): void {
+  //   this.openMovieAddPopup.emit(!this.addMoviePopupStatus);
+  //   this.addMoviePopupStatus = !this.addMoviePopupStatus;
+  // }
 }
