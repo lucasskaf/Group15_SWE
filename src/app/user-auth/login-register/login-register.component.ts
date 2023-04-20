@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { loginInteraction } from './login-register'
-import { User } from '../user';
+import { Movie, User } from '../user';
 
 import { FormBuilder, Validators } from '@angular/forms';
 
@@ -49,6 +49,13 @@ export class LoginRegisterComponent implements OnInit {
           console.log('PRESENT')
           Emmiters.authEmmiter.emit(true)
           Emmiters.userData.emit(userInfo.username)
+          Emmiters.isLoginOpen.emit(false)            
+          Emmiters.watchList = userInfo.watchlist
+          userInfo.watchlist.forEach((value)=>{
+            console.log(`WATCHLIST ITEM ID: ${value.id}`)
+          })
+
+          Emmiters.userPosts = userInfo.posts
         },
         error: (err) => {
           console.log('Error')
@@ -79,7 +86,10 @@ export class LoginRegisterComponent implements OnInit {
             Emmiters.authEmmiter.emit(true)
             Emmiters.isLoginOpen.emit(false)
             Emmiters.userData.emit(userInfo.username)
-            Emmiters.watchList.emit(userInfo.watchlist)
+            // Emmiters.watchList.emit(userInfo.watchlist)
+            // this.userWatchlist.emit(userInfo.watchlist)
+            Emmiters.watchList = userInfo.watchlist
+            Emmiters.userPosts = userInfo.posts
             console.log(`WATCHLIST: ${userInfo.watchlist}`)
             this.toast.success({detail: "Success", summary: "You were logged in!", duration: 4000})
           }

@@ -4,6 +4,7 @@ import { ReactiveFormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { LoginRegisterService } from "src/app/services/login-register.service";
 import { LoginRegisterComponent } from "./login-register.component";
+import { NgToastModule } from 'ng-angular-popup';
 
 describe("LoginRegisterComponent", () => {
   let component: LoginRegisterComponent;
@@ -11,7 +12,7 @@ describe("LoginRegisterComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, MatIconModule, ReactiveFormsModule],
+      imports: [HttpClientTestingModule, MatIconModule, ReactiveFormsModule, NgToastModule],
       declarations: [LoginRegisterComponent],
       providers: [LoginRegisterService]
     }).compileComponents();
@@ -27,8 +28,9 @@ describe("LoginRegisterComponent", () => {
     const fixture = TestBed.createComponent(LoginRegisterComponent);
     // spy on event emitter
     const component = fixture.componentInstance;
-    component.toogleLogin()
-    let spy = spyOn(component.isClosed, 'emit')
+    component.closeLogin()
+    // let spy = spyOn(component.isLoginOpen, 'valueOf')
+    let spy = spyOnProperty(component, 'isLoginOpen', "get").and.callThrough()
 
     // trigger the click
     const nativeElement = fixture.nativeElement;
@@ -37,7 +39,8 @@ describe("LoginRegisterComponent", () => {
 
     fixture.detectChanges();
 
-    expect(spy).toHaveBeenCalledWith(false);
+    expect(spy).toHaveBeenCalledWith();
+    expect(component.isLoginOpen).toBe(false)
   })
 
   it('should call loginUser', () => {

@@ -837,10 +837,10 @@ func createPost(context *gin.Context) {
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
 	result, err := postDatabase.InsertOne(context, bson.M{
 		"username": username,
+		"movieid":  newPost.MovieID,
 		"title":    newPost.Title,
 		"body":     newPost.Body,
 		"date":     date,
-		"rating":   newPost.Rating,
 	})
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
@@ -1086,7 +1086,7 @@ func getPosts(context *gin.Context) {
 			panic(err)
 		}
 		if len(posts) == 0 {
-			context.IndentedJSON(http.StatusOK, gin.H{"error": "No posts found"})
+			context.IndentedJSON(http.StatusNotFound, gin.H{"error": "No posts found"})
 		} else {
 			//reverses order of posts before return - code from https://golangprojectstructure.com/reversing-go-slice-array/#concurrent-reordering
 			for i, j := 0, len(posts)-1; i < j; i, j = i+1, j-1 {

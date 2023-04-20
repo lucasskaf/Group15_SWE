@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { MovieGeneratorService } from '../services/movie-generator.service';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Movie, User, moviePosts } from '../user-auth/user';
@@ -8,164 +8,97 @@ import { Emmiters } from '../emitters/emmiters';
 @Component({
   selector: 'bb-movie-generator',
   templateUrl: './movie-generator.component.html',
-  styleUrls: ['./movie-generator.component.css']
+  styleUrls: ['./movie-generator.component.css'],
 })
 export class MovieGeneratorComponent implements OnInit {
+  username;
+  generatorForm;
+  postForm;
+  generatedMovie: Movie = {id: 3, vote_average: 0}
 
-  username
-  generatorForm
-  postForm
-  generatedMovie: Movie = {vote_average: 0.0}
-  isPopupOpen: boolean = false
-  isAuthenticated: boolean = false
-  userWatchedList: Movie[] = []
-  isMovieWatched: boolean = false
-  isPostOpen: boolean = false
-
-  constructor(private movieGeneratorService : MovieGeneratorService,
-    private formBuilder: FormBuilder) {
+  constructor(
+    private movieGeneratorService: MovieGeneratorService,
+    private formBuilder: FormBuilder
+  ) {
     this.generatorForm = this.formBuilder.group({
       actors: this.formBuilder.control(''),
       genres: this.formBuilder.control(''),
       min_rating: this.formBuilder.control(''),
       max_runtime: this.formBuilder.control(''),
-      streaming_providers: this.formBuilder.control('')
-    })
+      streaming_providers: this.formBuilder.control(''),
+    });
   }
 
   ngOnInit(): void {
-    Emmiters.authEmmiter.subscribe(
-      {
-        next: (auth : boolean) => {
-          this.isAuthenticated = auth
-        }
-      }
-    )
-
-    Emmiters.watchList.subscribe(
-      {
-        next: (userList: Movie[]) => {
-          this.userWatchedList = userList
-        }
-      }
-    )
-
-    Emmiters.userData.subscribe(
-      {
-        next: (username: string) => {
-          this.username = username
-        }
-      }
-    )
+    
   }
 
-  getGeneratedMovie(filters){
-    this.movieGeneratorService.getRandomMovieWithFilters(filters).subscribe(
-      {
-        next: (respMovie) => {
-          console.log(respMovie)
-          this.generatedMovie = respMovie
+  getGeneratedMovie(filters) {
+    this.movieGeneratorService.getRandomMovieWithFilters(filters).subscribe({
+      next: (respMovie) => {
+        console.log(respMovie);
+        // let testMovie = {
+        //     "adult": false,
+        //     "backdrop_path": "/OQeVFQIq0UmzStgkgugQGf6uHB.jpg",
+        //     "id": 662409,
+        //     "original_language": "en",
+        //     "original_title": "Wake N Bake by Rohan Joshi",
+        //     "overview": "\"Hysterical\", \"unmissable\", \"magnificent\", \"profound\" are all words. Coincidentally, Wake N Bake, Rohan Joshi's first stand-up special, also has words. After almost a decade in comedy, one of India's foremost comedians and online has words to say about life in one's thirties, home renovation, (thrilling, we know), not being cut out for marriage or roadtrips, and living a 420- friendly life (oh so now we have your attention. Typical). Some of those words are even funny. The seamless hour-long narrative is a tour of all the things that keep Rohan up at night, which, as it turns out, is pretty trivial stuff, because he's basic like that. It's an hour of comedy you'll never forget for five minutes.",
+        //     "popularity": 2.156,
+        //     "poster_path": "/qQEiA6R52nSKYG4MOlN3ZRC1VyC.jpg",
+        //     "release_date": "2020-01-10",
+        //     "title": "Wake N Bake by Rohan Joshi",
+        //     "vote_average": 8,
+        //     "vote_count": 3
+        // }
+        
+        // console.log(testMovie)
+        // this.generatedMovie = respMovie;
+        this.generatedMovie = respMovie
+        Emmiters.generatedMovie.emit(respMovie)
 
-          if(this.userWatchedList.includes(this.generatedMovie)){
-            this.isMovieWatched = true
+        for(let i = 0; i < Emmiters.watchList.length; i++){
+          if(Emmiters.watchList.at(i)?.id == this.generatedMovie.id){
+            Emmiters.isMovieWatched.emit(true);
+            console.log('movie was watched');
           }
-          else {
-            this.isMovieWatched = false
-          }
-
-          console.log(`WAS MOVIE WATCHED: ${this.isMovieWatched}`)
-          this.showMovie()
-
-          console.log(`GETTING USERNAME: ${this.username}`)
-
-          this.postForm = this.formBuilder.group({
-            movieid: this.generatedMovie.id,
-            username: this.username,
-            title: this.formBuilder.control(''),
-            body: this.formBuilder.control('', Validators.required)
-          })
-        },
-        error: (err) => {
-          console.log(err)
         }
-      }
-    )
+
+        Emmiters.isPopupOpen.emit(true);
+      },
+      error: (err) => {
+        console.log(err);
+      },
+    });
   }
 
-  showMovie() {
-    this.isPopupOpen = true
-  }
-
-  closeMovie() {
-    console.log('CLICKED ON CLOSE')
-    this.isPopupOpen = false
-  }
-
-  onSubmit(generatorData){
-    console.log(`BFORE: ${generatorData}`)
-
+  onSubmit(generatorData) {
+    let actors_array: string[] = [];
     // Text process
-    if(generatorData.actors){
-      generatorData.actors = generatorData.actors.toLowerCase()
+    if (generatorData.actors != '') {
+      generatorData.actors = generatorData.actors.toLowerCase();
+      actors_array = generatorData.actors.split(', ');
     }
-    
-    let actors_array = generatorData.actors.split(', ')
-    
-    generatorData.actors = actors_array
+
+    generatorData.actors = actors_array;
 
     //Rating & Runtime process
-    if(generatorData.min_rating) {
-      generatorData.min_rating = (parseFloat(generatorData.min_rating) * 2.0)
+    if (generatorData.min_rating) {
+      generatorData.min_rating = parseFloat(generatorData.min_rating) * 2.0;
     }
 
-    if(generatorData.max_runtime) {
-      generatorData.max_runtime = parseInt(generatorData.max_runtime)
+    if (generatorData.max_runtime) {
+      generatorData.max_runtime = parseInt(generatorData.max_runtime);
     }
 
-    console.log(`AFTER: ${generatorData}`)
-
-    this.getGeneratedMovie(generatorData)
-  }
-
-  onSubmitPost(post: moviePosts){
-    post.movieid = post.movieid.toString()
-    console.log(post)
-
-    this.movieGeneratorService.addMoviePosts(post).subscribe(
-      {
-        next: (resp) => {
-          console.log('ADDED SUCCESSFULLY')
-        },
-        error: (err) => {
-          console.log('NOT ADD POST')
-        }
-      }
-    )
+    this.getGeneratedMovie(generatorData);
   }
 
   formatLabel(value: number): string {
-    if(value % 60 == 0){
-      return (value / 60) + 'hrs'
+    if (value % 60 == 0) {
+      return value / 60 + 'hrs';
     }
 
-    return (Math.floor(value / 60)) + ':' + (value % 60)
-  }
-
-  addToWatchlist(movie: Movie) {
-    this.movieGeneratorService.addToWatchList(movie).subscribe(
-      {
-        next: (resp) => {
-          console.log(resp)
-          this.isMovieWatched = true
-        },
-        error: (err) => {
-          console.log(err)
-        }
-      }
-    )
-  }
-
-  toogleAddPost(){
-    this.isPostOpen = !this.isPostOpen
+    return Math.floor(value / 60) + ':' + (value % 60);
   }
 }

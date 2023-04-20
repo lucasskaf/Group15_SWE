@@ -34,4 +34,12 @@ export class MovieGeneratorService {
   addMoviePosts(post: moviePosts){
     return this.httpClient.post<moviePosts>(`${this.serverURL}/posts`, post, {withCredentials: true})
   }
+
+  getMoviePosts(movieId: string | undefined){
+    if(typeof(movieId) == undefined){
+      throw new Error('movieId is undefined')
+    }
+  
+    return this.httpClient.get<moviePosts[]>(`${this.serverURL}/posts/${movieId}/1`)
+  }
 }

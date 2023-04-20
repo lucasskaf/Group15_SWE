@@ -42,7 +42,7 @@ export class NavBarComponent {
       () => {
         this.authethicated = false
         Emmiters.authEmmiter.emit(false)
-        window.location.reload()
+        // window.location.reload()
       }
     )
   }

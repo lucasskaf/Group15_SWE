@@ -1,9 +1,13 @@
 import { EventEmitter } from "@angular/core";
-import { Movie } from "../user-auth/user";
+import { Movie, moviePosts } from "../user-auth/user";
 
 export class Emmiters {
     static authEmmiter = new EventEmitter<boolean>()
     static userData = new EventEmitter<string>()
     static isLoginOpen = new EventEmitter<boolean>()
-    static watchList = new EventEmitter<Movie[]>()
+    static watchList: Movie[] = []
+    static isMovieWatched = new EventEmitter<boolean>()
+    static isPopupOpen = new EventEmitter<boolean>()
+    static generatedMovie = new EventEmitter<Movie>()
+    static userPosts: moviePosts[] = []
 }
