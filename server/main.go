@@ -554,7 +554,7 @@ our API key: 010c2ddcdf323db029b6dca4cbfa49de
 As of 2/18/2022, the largest possible movie ID is 1088411, while the smallest possible movie ID is 2
 */
 
-func randomMovie(context *gin.Context) Movie {
+func randomMovie(context *gin.Context) {
 	appropriate := false
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var randMovie Movie
@@ -583,27 +583,20 @@ func randomMovie(context *gin.Context) Movie {
 	//returns an empty struct and an error if function failed to produce a random movie.
 	if randMovie.Title == "" {
 		context.IndentedJSON(http.StatusInternalServerError, randMovie)
-		return randMovie
 	} else {
-		// context.IndentedJSON(http.StatusOK, randMovie)
-		return randMovie
+		context.IndentedJSON(http.StatusOK, randMovie)
 	}
-}
-
-func getRandomMoviesList(context *gin.Context) {
-	var movieList [8]Movie
-	for i := 0; i < 8; i++ {
-		movieList[i] = randomMovie(context)
-	}
-	context.IndentedJSON(http.StatusOK, movieList)
 }
 
 func randomMovieWithFilters(context *gin.Context) {
 	var filters GeneratorFilters
-	filters.MaxRuntime = 4294967295
-	filters.MinRating = 0
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	appropriate := false
+	filters.MinRating = 0.0
 	context.BindJSON(&filters)
+	//tracks visited pages and indices to avoid repeats - first map holds page numbers and second map holds page indices
+	visitedPages := make(map[int]map[int]bool)
+	visitedMovies := 0
 	//first assembles actor IDs for query
 	var actorIDs []int
 	var ActorResults ActorResults
@@ -639,7 +632,7 @@ func randomMovieWithFilters(context *gin.Context) {
 	requestString += "&with_genres="
 	//loop adds genres to request
 	for _, g := range filters.Genres {
-		requestString += (strconv.Itoa(g) + "|")
+		requestString += (strconv.Itoa(g) + ",")
 	}
 	//specifies maximum runtime
 	requestString += ("&with_runtime.lte=" + strconv.Itoa(filters.MaxRuntime))
@@ -674,16 +667,54 @@ func randomMovieWithFilters(context *gin.Context) {
 		context.IndentedJSON(http.StatusOK, gin.H{"error": "No results"})
 		return
 	} else {
-		//select a random page if there is more than one page of results
-		if resultPage.TotalPages > 1 {
+		//selects a random page if there is more than one page of results
+		switch pages := resultPage.TotalPages; pages {
+		case 1:
+			var index int
+			visitedPages = map[int]map[int]bool{1: make(map[int]bool)}
+			page := visitedPages[1]
+			for appropriate == false {
+				//returns no result if there are no appropriate movies
+				if resultPage.TotalResults == visitedMovies {
+					context.IndentedJSON(http.StatusOK, gin.H{"error": "No results for selected filters"})
+					return
+				}
+				index = generateRandomNumber(0, float64(len(resultPage.Results)-1), *rng)
+				_, exists := page[index]
+				if exists == false {
+					page[index] = true
+					visitedMovies++
+				} else {
+					//skips indices that have already been visited
+					continue
+				}
+				appropriate = filterMovies(&resultPage.Results[index])
+			}
+			result := resultPage.Results[index]
+			context.IndentedJSON(http.StatusOK, result)
+
+		default:
 			//resets slice
 			resultPage.Results = nil
+			var result Movie
 			//continues to execute if there are no movies in the given page
-			for len(resultPage.Results) == 0 {
-				if resultPage.TotalPages > 500 {
-					resultPage.TotalPages = 500
+			for len(resultPage.Results) == 0 || appropriate == false {
+				if visitedMovies == resultPage.TotalResults {
+					context.IndentedJSON(http.StatusOK, gin.H{"error": "No results for selected filters"})
+					return
+				}
+				if resultPage.TotalPages > 100 {
+					resultPage.TotalPages = 100
+					resultPage.TotalResults = 2000
 				}
 				randomPage := generateRandomNumber(1, float64(resultPage.TotalPages), *rng)
+				//checks if page has been visited and adds it if it hasn't
+				page, exists := visitedPages[randomPage]
+				if exists == false {
+					visitedPages[randomPage] = make(map[int]bool)
+					page = visitedPages[randomPage]
+				}
+				//makes new request for specific page
 				newRequestString := requestString + "&page=" + strconv.Itoa(randomPage)
 				resp, err := http.Get(newRequestString)
 				if err != nil {
@@ -694,13 +725,22 @@ func randomMovieWithFilters(context *gin.Context) {
 					panic(err)
 				}
 				json.Unmarshal(binary, &resultPage)
+				index := generateRandomNumber(0, float64(len(resultPage.Results)-1), *rng)
+				//adds index to map if it isn't already there
+				_, exists = page[index]
+				if exists == false {
+					page[index] = true
+					visitedMovies++
+				} else {
+					//skips reruns loop if index already exists
+					continue
+				}
+				result = resultPage.Results[index]
+				appropriate = filterMovies(&result)
 			}
+			context.IndentedJSON(http.StatusOK, result)
 		}
-
 	}
-	index := generateRandomNumber(0, float64(len(resultPage.Results)-1), *rng)
-	result := resultPage.Results[index]
-	context.IndentedJSON(http.StatusOK, result)
 }
 
 func trueRandomMovie(context *gin.Context) {
@@ -743,7 +783,6 @@ func trueRandomMovie(context *gin.Context) {
 	//takes the string and sends it back to frontend as JSON
 	context.JSON(http.StatusOK, movieData)
 }
-
 func generateRandomNumber(smallest float64, largest float64, rng rand.Rand) int {
 	time.Sleep(17 * time.Microsecond)
 	output := int(((rng.Float64() * (largest - smallest)) + smallest) + 0.5)
