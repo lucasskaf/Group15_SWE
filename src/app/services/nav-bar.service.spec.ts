@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { MatIconModule } from '@angular/material/icon';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { AppRoutingModule } from '../app-routing.module';
+import { routing } from '../app-routing.module';
 import { ProfilePageModule } from '../profile-page/profile-page.module';
 import { UserAuthModule } from '../user-auth/user-auth.module';
 
@@ -16,7 +16,7 @@ describe('NavBarService', () => {
     TestBed.configureTestingModule({
       imports: [BrowserModule,
         HttpClientModule,
-        AppRoutingModule,
+        routing,
         UserAuthModule,
         ProfilePageModule,
         BrowserAnimationsModule,
