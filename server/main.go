@@ -140,7 +140,7 @@ var testUsername string
 type Post struct {
 	PostID   primitive.ObjectID `json:"id"`
 	MovieID  string             `json:"movie_id"`
-  Rating   float64            `json:"rating"`
+	Rating   float64            `json:"rating"`
 	Username string             `json:"username"`
 	Title    string             `json:"title"`
 	Body     string             `json:"body"`
@@ -368,7 +368,7 @@ func addToWatchlist(context *gin.Context) {
 	sanitizeMovieFields(&movie, nil)
 	if movie.OriginalTitle == "" {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
-    return
+		return
 	}
 	filter := bson.D{{Key: "username", Value: username}}
 	var updatedUser User
@@ -406,16 +406,16 @@ func removeFromWatchlist(context *gin.Context) {
 	}
 	//should take in movie object
 	username := context.Param("username")
-  
-  if localMode {
-    username = testUsername
-  }
-  
-  if username == "" {
-    context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username"})
-    return
-  }
-  
+
+	if localMode {
+		username = testUsername
+	}
+
+	if username == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username"})
+		return
+	}
+
 	client := connectToDB()
 	database := client.Database("UserInfo").Collection("UserInfo")
 	var movie Movie
@@ -423,19 +423,21 @@ func removeFromWatchlist(context *gin.Context) {
 		fmt.Printf("JSON bind failed!")
 		return //catches null requests and throws error.
 	}
-	//filter := bson.D{{"username.watchlist", movie.Title}}
 	if !localMode {
-		filter := bson.D{{Key: "username", Value: username}, {"$inc", bson.D{{"$pull", movie.Title}}}}
-		result := database.FindOneAndDelete(context, filter)
-		if result == nil {
-			fmt.Println("ERORR")
+		filter := bson.M{"username": username}
+		update := bson.M{"$pull": bson.M{"watchlist": movie}}
+		result, _ := database.UpdateOne(context, filter, update)
+		if result.ModifiedCount == 0 {
+			fmt.Println("Movie does not exist")
 			context.IndentedJSON(http.StatusBadRequest, result)
 			client.Disconnect(context)
+			return
 		}
-		context.IndentedJSON(http.StatusOK, result)
-		client.Disconnect(context)
 	}
-	if localMode {
+	context.IndentedJSON(http.StatusOK, movie)
+	client.Disconnect(context)
+
+	if localMode == true {
 		filter := bson.M{"username": username}
 		update := bson.M{"$pull": bson.M{"watchlist": movie}}
 		result, err := database.UpdateOne(context, filter, update)
@@ -834,12 +836,12 @@ func createPost(context *gin.Context) {
 	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
 	result, err := postDatabase.InsertOne(context, bson.M{
-    "username": username,
-    "title":    newPost.Title,
-    "body":     newPost.Body,
-    "date":     date,
-    "rating":   newPost.Rating,
-  })
+		"username": username,
+		"title":    newPost.Title,
+		"body":     newPost.Body,
+		"date":     date,
+		"rating":   newPost.Rating,
+	})
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
 		return
@@ -847,7 +849,7 @@ func createPost(context *gin.Context) {
 
 	newPost.PostID = result.InsertedID.(primitive.ObjectID)
 	newPost.Date = date
-  newPost.Username = username
+	newPost.Username = username
 
 	userDatabase := client.Database("UserInfo").Collection("UserInfo")
 	filter := bson.M{"username": username}
@@ -884,11 +886,11 @@ func validatePost(post *Post) (bool, string) {
 		error = "post title or body is too long"
 		return valid, error
 	}
-  if post.Rating < 0 || post.Rating > 10 {
-    valid = false
-    error = "rating value must be between 0 and 10"
-    return valid, error
-  }
+	if post.Rating < 0 || post.Rating > 10 {
+		valid = false
+		error = "rating value must be between 0 and 10"
+		return valid, error
+	}
 	return valid, error
 }
 
@@ -975,11 +977,11 @@ func updatePost(context *gin.Context) {
 	}
 
 	postID := context.Param("postID")
-  if localMode {
-    url := context.Request.URL.String()
-    parts := strings.Split(url, "/")
-    postID = parts[len(parts)-1]
-  }
+	if localMode {
+		url := context.Request.URL.String()
+		parts := strings.Split(url, "/")
+		postID = parts[len(parts)-1]
+	}
 	objectID, err := primitive.ObjectIDFromHex(postID)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "This is an invalid post ID"})
@@ -993,9 +995,9 @@ func updatePost(context *gin.Context) {
 	// Need to get the post that needs to be updated
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
 	filter := bson.M{"_id": objectID}
-  if localMode {
-    filter = bson.M{"postid": objectID}
-  }
+	if localMode {
+		filter = bson.M{"postid": objectID}
+	}
 	var currentPost Post
 	err = postDatabase.FindOne(context, filter).Decode(&currentPost)
 	if err != nil { // post does not exist
@@ -1021,10 +1023,10 @@ func updatePost(context *gin.Context) {
 	updatedPost.Date = time.Now().Format("January 2, 2006")
 	updateMade := bson.M{
 		"$set": bson.M{
-			"title": updatedPost.Title,
-			"body":  updatedPost.Body,
-			"date":  updatedPost.Date,
-      "rating": updatedPost.Rating,
+			"title":  updatedPost.Title,
+			"body":   updatedPost.Body,
+			"date":   updatedPost.Date,
+			"rating": updatedPost.Rating,
 		},
 	}
 
@@ -1037,9 +1039,9 @@ func updatePost(context *gin.Context) {
 	userDatabase := client.Database("UserInfo").Collection("UserInfo")
 	updateUserPosts := bson.M{
 		"$set": bson.M{
-			"posts.$.title": updatedPost.Title,
-			"posts.$.body":  updatedPost.Body,
-      "posts.$.rating": updatedPost.Rating,
+			"posts.$.title":  updatedPost.Title,
+			"posts.$.body":   updatedPost.Body,
+			"posts.$.rating": updatedPost.Rating,
 		},
 	}
 	updateFilter := bson.M{"username": username, "posts.postid": objectID}
@@ -1303,10 +1305,10 @@ func main() {
 	router.POST("/generate/filters", randomMovieWithFilters)
 	router.POST("/signup", createUser)
 	router.POST("/:username/add", addToWatchlist)
-  router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
+	router.POST("/:username/watchlist/remove", removeFromWatchlist)
 	router.POST("/posts", createPost)
 	router.DELETE("/posts/:postID", deletePost)
-  router.PUT("/posts/:postID", updatePost)
+	router.PUT("/posts/:postID", updatePost)
 	router.PUT("/:username/update", updateUserInfo)
 	router.DELETE("/:username/delete", removeUser)
 	router.Run("localhost:8080")
