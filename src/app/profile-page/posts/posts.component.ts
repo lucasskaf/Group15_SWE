@@ -20,19 +20,19 @@ export class PostsComponent implements OnInit {
     this.posts = Emmiters.userPosts;
   }
 
-  onPostDelete(post: moviePosts, id: string) {
-    this.movieService.removeMoviePosts(post, id).subscribe({
-      next: (resp) => {
-        console.log(resp);
-        // remove the movie from the watchList in the backend
-        const index = Emmiters.userPosts.indexOf(post);
-        if (index > -1) {
-          Emmiters.userPosts.splice(index, 1);
-        }
-      },
-      error: (error) => {
-        console.log(error);
-      }
-    });
-  }
+  // onPostDelete(post: moviePosts, id: string) {
+  //   this.movieService.removeMoviePosts(post, id).subscribe({
+  //     next: (resp) => {
+  //       console.log(resp);
+  //       // remove the movie from the watchList in the backend
+  //       const index = Emmiters.userPosts.indexOf(post);
+  //       if (index > -1) {
+  //         Emmiters.userPosts.splice(index, 1);
+  //       }
+  //     },
+  //     error: (error) => {
+  //       console.log(error);
+  //     }
+  //   });
+  // }
 }
