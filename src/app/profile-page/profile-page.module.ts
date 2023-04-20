@@ -4,7 +4,7 @@ import { MatToolbarModule} from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { NavbarComponent } from './navbar/navbar.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { SidebarComponent } from './sidebar/sidebar.component';
+// import { SidebarComponent } from './sidebar/sidebar.component';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
@@ -17,11 +17,11 @@ import { AddMoviePopupComponent } from './add-popup-movie/add-popup-movie.compon
 import { PostComponent } from '../common/post/post.component';
 import { AddPopopPostComponent } from './add-popop-post/add-popop-post.component';
 import { PostFormComponent } from './post-form/post-form.component';
-//import { routing } from './profile-page.routing';
+import { routing } from '../app-routing.module';
 
 @NgModule({
   declarations: [
-    SidebarComponent,
+    // SidebarComponent,
     MainComponent,
     WatchedComponent,
     PostsComponent,
@@ -40,8 +40,8 @@ import { PostFormComponent } from './post-form/post-form.component';
     MatSidenavModule,
     MatListModule,
     MatIconModule,
-    ReactiveFormsModule
-    //routing
+    ReactiveFormsModule,
+    routing
   ],
   exports: [
     MatToolbarModule,
@@ -51,7 +51,7 @@ import { PostFormComponent } from './post-form/post-form.component';
     MatIconModule,
     MainComponent,
     NavbarComponent,
-    SidebarComponent
+    // SidebarComponent
   ]
 })
 export class ProfilePageModule { }

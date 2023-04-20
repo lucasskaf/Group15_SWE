@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-movie',
@@ -6,7 +6,7 @@ import { Component, Input } from '@angular/core';
   styleUrls: ['./movie.component.css']
 })
 export class MovieComponent {
-
+  
   @Input() title!: string;
   @Input() actor!: string;
   @Input() genre!: string;
@@ -20,4 +20,7 @@ export class MovieComponent {
     rating: string;
     runtime: string;
   }
+
+  @Output() movieDelete = new EventEmitter<any>();
+
 }

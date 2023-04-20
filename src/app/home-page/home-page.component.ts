@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Emmiters } from '../emitters/emmiters';
 import { MovieGeneratorService } from '../services/movie-generator.service';
+import { LoginRegisterService } from '../services/login-register.service';
 import { Movie } from '../user-auth/user';
 
 
@@ -19,9 +20,9 @@ export class HomePageComponent implements OnInit {
   userWatchlist: Movie[] = []
 
   constructor(
-    private movieGeneratorService: MovieGeneratorService
-  ){
-  }
+    private movieGeneratorService: MovieGeneratorService,
+    private loginService: LoginRegisterService
+  ){}
 
   ngOnInit(): void {
     this.getMovie()
@@ -30,6 +31,7 @@ export class HomePageComponent implements OnInit {
       {
         next: (username : string) => {
           this.username = username
+          this.loginService.setUsername(this.username);
         }
       }
     )
@@ -38,6 +40,7 @@ export class HomePageComponent implements OnInit {
       {
         next: (auth : boolean) => {
           this.isAuthenticated = auth
+          this.loginService.setUserAuth(this.isAuthenticated);
           this.message = 'Hey '
         }
       }
@@ -68,5 +71,9 @@ export class HomePageComponent implements OnInit {
     }
 
     Emmiters.isPopupOpen.emit(true);
+  }
+
+  setUserAuth(auth: boolean) {
+    this.isAuthenticated = auth;
   }
 }

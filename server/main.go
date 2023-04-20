@@ -387,14 +387,20 @@ func addToWatchlist(context *gin.Context) {
 }
 
 func removeFromWatchlist(context *gin.Context) {
-	header := context.GetHeader("Authorization") // gets "Bearer token"
-	if header == "" {                            // checks if the authorization header is empty or not and throws error if it is
+	// header := context.GetHeader("Authorization") // gets "Bearer token"
+	// if header == "" {                            // checks if the authorization header is empty or not and throws error if it is
+	// 	context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+	// 	return
+	// }
+	cookie, _ := context.Cookie("token")
+
+	if cookie == "" { // checks if the authorization header is empty or not and throws error if it is
 		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
 		return
 	}
-	headerToken := strings.ReplaceAll(header, "Bearer ", "") // gets the token only, which is everything after "Bearer"
+	// headerToken := strings.ReplaceAll(cookie, "Bearer ", "") // gets the token only, which is everything after "Bearer"
 	// Now we parse through the token and check that it is valid, if not, then error
-	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+	userToken, err := jwt.Parse(cookie, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
 		}
@@ -406,10 +412,6 @@ func removeFromWatchlist(context *gin.Context) {
 	}
 	//should take in movie object
 	username := context.Param("username")
-
-	if localMode {
-		username = testUsername
-	}
 
 	if username == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username"})
@@ -935,14 +937,21 @@ func validatePost(post *Post) (bool, string) {
 
 // this function deletes a post for the logged in user
 func deletePost(context *gin.Context) {
-	header := context.GetHeader("Authorization")
-	if header == "" {
+
+	// header := context.GetHeader("Authorization")
+	// if header == "" {
+	// 	context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
+	// 	return
+	// }
+
+	// headerToken := strings.ReplaceAll(header, "Bearer ", "")
+	cookie, _ := context.Cookie("token")
+
+	if cookie == "" { // checks if the authorization header is empty or not and throws error if it is
 		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized User"})
 		return
 	}
-
-	headerToken := strings.ReplaceAll(header, "Bearer ", "")
-	userToken, err := jwt.Parse(headerToken, func(userToken *jwt.Token) (interface{}, error) {
+	userToken, err := jwt.Parse(cookie, func(userToken *jwt.Token) (interface{}, error) {
 		if _, ok := userToken.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", userToken.Header["alg"])
 		}
@@ -1350,5 +1359,6 @@ func main() {
 	router.PUT("/posts/:postID", updatePost)
 	router.PUT("/:username/update", updateUserInfo)
 	router.DELETE("/:username/delete", removeUser)
+	router.POST("/:username/watchlist/remove", removeFromWatchlist)
 	router.Run("localhost:8080")
 }

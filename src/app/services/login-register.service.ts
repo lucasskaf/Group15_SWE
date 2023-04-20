@@ -11,6 +11,9 @@ export class LoginRegisterService {
 
   constructor(private http : HttpClient) { }
 
+  userAuthStatus: boolean = false;
+  userName: string = "";
+
   serverURL : string = 'http://localhost:8080'
 
   createUser(user : User) : Observable<User> {
@@ -23,5 +26,21 @@ export class LoginRegisterService {
 
   getUser() {
     return this.http.get<User>("http://localhost:8080/user", {withCredentials: true})
+  }
+
+  getUserAuth(): boolean {
+    return this.userAuthStatus;
+  }
+
+  setUserAuth(auth: boolean) {
+    this.userAuthStatus = auth;
+  }
+
+  getUsername(): string {
+    return this.userName;
+  }
+
+  setUsername(name: string){
+    this.userName = name;
   }
 }

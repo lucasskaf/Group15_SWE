@@ -1,2 +1,13 @@
-<app-navbar (openSidenav)="toggleSidenavStatus($event)" [sidenavStatus]="isSidenavOpen"></app-navbar>
-<app-sidebar [isOpen]="isSidenavOpen" (isClosed)="toggleSidenavStatus($event)"></app-sidebar>
+<app-navbar></app-navbar>
+<div class="watched-section">
+    <app-watched (openMovieAddPopup)="toggleAddMoviePopupStatus($event)"
+        [addMoviePopupStatus]="isAddMoviePopupOpen"></app-watched>
+    <!-- <app-add-popup-movie [isOpen]="isAddMoviePopupOpen"
+        (isClosed)="toggleAddMoviePopupStatus($event)"></app-add-popup-movie> -->
+</div>
+<div class="posts-section">
+    <app-posts (openPostAddPopup)="toggleAddPostPopupStatus($event)"
+        [addPostPopupStatus]="isAddPostPopupOpen"></app-posts>
+    <!-- <app-add-popop-post [isOpen]="isAddPostPopupOpen"
+        (isClosed)="toggleAddPostPopupStatus($event)"></app-add-popop-post> -->
+</div>
