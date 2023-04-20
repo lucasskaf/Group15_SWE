@@ -1,23 +1,23 @@
 .posts-container {
   background-color: lightgrey;
   border-radius: 10px;
-  width: 90%;
-  height: 20%;
+  width: 40%;
+  height: 90%;
   padding: 1%;
 
   position: absolute;
-  top: 70%;
+  top: 5%;
   right: 5%;
   bottom: 0;
-  left: 20%;
+  left: 72%;
   margin-left: -15.5%;
-  margin-top: 20px;
+  margin-top: 50px;
 
   overflow: hidden;
   overflow-y: scroll;
 
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
 }
 
 .post-container {
@@ -40,4 +40,31 @@
   right: 0;
   margin-top: 10px;
   margin-right: 10px;
+}
+
+.post-item {
+  background-color: #333333;
+  color: white;
+  width: 200px;
+  height: 300px;
+  box-sizing: border-box;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#post-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+#title {
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-bottom: 10px;
 }

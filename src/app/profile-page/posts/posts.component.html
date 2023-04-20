@@ -17,6 +17,15 @@
     </div>
 
     <div class="post-container">
-        <app-post *ngFor="let post of posts" [postItem]="post"></app-post>
+        <div class="post-item" *ngFor="let post of posts">
+            <div id="post-text">
+                <div id="post-header">
+                    <div id="post-header-main">
+                        <p id="title">{{post.title}}</p>
+                    </div>
+                </div>
+                <p>{{post.body}}</p>
+            </div>
+        </div>
     </div>
 </div>
