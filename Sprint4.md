@@ -1,6 +1,6 @@
 # Sprint 4 - Work Completed
 
-__Video Link:__
+__Video Link: https://youtu.be/wU2CeOaW_kI
 
 ### Front-end:
   - Our main goals for the final sprint was to complete the generator and "Elite Recommendatios" section of the home page,
