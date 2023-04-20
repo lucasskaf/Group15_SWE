@@ -97,7 +97,8 @@ export class MoviePopupComponent implements OnInit {
   closeMovie() {
     console.log('CLICKED ON CLOSE')
     Emmiters.isPopupOpen.emit(false)
-    // Emmiters.isMovieWatched.emit(false)
+    Emmiters.isMovieWatched.emit(false)
+    this.isMovieWatched = false
   }
 
   toogleAddPost(){

@@ -1,10 +1,23 @@
 <div class="nav-bar">
   <h2>Binge <span>Buddy</span></h2>
   <div class="nav-buttons">
-    <button (click)="onLoginClick()" mat-raised-button color="warn" class="bb-button" id="login-button"
-      *ngIf="!authethicated">
+    <button
+      (click)="onLoginClick()"
+      mat-raised-button
+      color="warn"
+      class="bb-button"
+      id="login-button"
+      *ngIf="!authethicated"
+    >
       <div class="button-label-wrap">
-        <svg id="login-icon" width="29" height="29" viewBox="0 0 29 29" fill="#FFF" xmlns="http://www.w3.org/2000/svg">
+        <svg
+          id="login-icon"
+          width="29"
+          height="29"
+          viewBox="0 0 29 29"
+          fill="#FFF"
+          xmlns="http://www.w3.org/2000/svg"
+        >
           <path
             d="M14.9592 16.221C14.9328 16.221 14.8931 16.221 14.8667 16.221C14.8271 16.221 14.7742 16.221 14.7346 16.221C11.7361 16.1285 9.49048 13.7905 9.49048 10.9108C9.49048 7.97838 11.8814 5.58749 14.8139 5.58749C17.7463 5.58749 20.1372 7.97838 20.1372 10.9108C20.124 13.8037 17.8652 16.1285 14.9988 16.221C14.9724 16.221 14.9724 16.221 14.9592 16.221ZM14.8007 7.55568C12.9514 7.55568 11.4587 9.06154 11.4587 10.8976C11.4587 12.7073 12.8721 14.1736 14.6686 14.2396C14.7082 14.2264 14.8403 14.2264 14.9724 14.2396C16.7424 14.1471 18.1294 12.6941 18.1426 10.8976C18.1426 9.06154 16.65 7.55568 14.8007 7.55568Z"
             fill="white" />
@@ -20,47 +33,101 @@
       </div>
     </button>
     <div>
-      <p *ngIf="authethicated">Welcome, <span>{{username}}</span>!</p>
+      <p *ngIf="authethicated">
+        Welcome, <span>{{ username }}</span
+        >!
+      </p>
 
-      <a routerLink="/profile">
-        <button mat-raised-button color="warn" class="bb-button" id="profile-button" *ngIf="authethicated">
-          <div class="button-label-wrap">
-            <svg id="profile-icon" width="29" height="29" viewBox="0 0 20 20" version="1.1"
-              xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000">
-              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-              <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-              <g id="SVGRepo_iconCarrier">
-                <title>profile_round [#ffffff]</title>
-                <desc>Created with Sketch.</desc>
-                <defs> </defs>
-                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                  <g id="Dribbble-Light-Preview" transform="translate(-140.000000, -2159.000000)" fill="#ffffff">
-                    <g id="icons" transform="translate(56.000000, 160.000000)">
-                      <path
-                        d="M100.562548,2016.99998 L87.4381713,2016.99998 C86.7317804,2016.99998 86.2101535,2016.30298 86.4765813,2015.66198 C87.7127655,2012.69798 90.6169306,2010.99998 93.9998492,2010.99998 C97.3837885,2010.99998 100.287954,2012.69798 101.524138,2015.66198 C101.790566,2016.30298 101.268939,2016.99998 100.562548,2016.99998 M89.9166645,2004.99998 C89.9166645,2002.79398 91.7489936,2000.99998 93.9998492,2000.99998 C96.2517256,2000.99998 98.0830339,2002.79398 98.0830339,2004.99998 C98.0830339,2007.20598 96.2517256,2008.99998 93.9998492,2008.99998 C91.7489936,2008.99998 89.9166645,2007.20598 89.9166645,2004.99998 M103.955674,2016.63598 C103.213556,2013.27698 100.892265,2010.79798 97.837022,2009.67298 C99.4560048,2008.39598 100.400241,2006.33098 100.053171,2004.06998 C99.6509769,2001.44698 97.4235996,1999.34798 94.7348224,1999.04198 C91.0232075,1998.61898 87.8750721,2001.44898 87.8750721,2004.99998 C87.8750721,2006.88998 88.7692896,2008.57398 90.1636971,2009.67298 C87.1074334,2010.79798 84.7871636,2013.27698 84.044024,2016.63598 C83.7745338,2017.85698 84.7789973,2018.99998 86.0539717,2018.99998 L101.945727,2018.99998 C103.221722,2018.99998 104.226185,2017.85698 103.955674,2016.63598"
-                        id="profile_round-[#ffffff]"> </path>
-                    </g>
+      <a routerLink="/profile"></a>
+      <button
+        (click)="onLogout()"
+        mat-raised-button
+        color="warn"
+        class="bb-button"
+        id="profile-button"
+        *ngIf="authethicated"
+      >
+        <div class="button-label-wrap">
+          <svg
+            id="profile-icon"
+            width="29"
+            height="29"
+            viewBox="0 0 20 20"
+            version="1.1"
+            xmlns="http://www.w3.org/2000/svg"
+            xmlns:xlink="http://www.w3.org/1999/xlink"
+            fill="#000000"
+          >
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g
+              id="SVGRepo_tracerCarrier"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></g>
+            <g id="SVGRepo_iconCarrier">
+              <title>profile_round [#ffffff]</title>
+              <desc>Created with Sketch.</desc>
+              <defs></defs>
+              <g
+                id="Page-1"
+                stroke="none"
+                stroke-width="1"
+                fill="none"
+                fill-rule="evenodd"
+              >
+                <g
+                  id="Dribbble-Light-Preview"
+                  transform="translate(-140.000000, -2159.000000)"
+                  fill="#ffffff"
+                >
+                  <g id="icons" transform="translate(56.000000, 160.000000)">
+                    <path
+                      d="M100.562548,2016.99998 L87.4381713,2016.99998 C86.7317804,2016.99998 86.2101535,2016.30298 86.4765813,2015.66198 C87.7127655,2012.69798 90.6169306,2010.99998 93.9998492,2010.99998 C97.3837885,2010.99998 100.287954,2012.69798 101.524138,2015.66198 C101.790566,2016.30298 101.268939,2016.99998 100.562548,2016.99998 M89.9166645,2004.99998 C89.9166645,2002.79398 91.7489936,2000.99998 93.9998492,2000.99998 C96.2517256,2000.99998 98.0830339,2002.79398 98.0830339,2004.99998 C98.0830339,2007.20598 96.2517256,2008.99998 93.9998492,2008.99998 C91.7489936,2008.99998 89.9166645,2007.20598 89.9166645,2004.99998 M103.955674,2016.63598 C103.213556,2013.27698 100.892265,2010.79798 97.837022,2009.67298 C99.4560048,2008.39598 100.400241,2006.33098 100.053171,2004.06998 C99.6509769,2001.44698 97.4235996,1999.34798 94.7348224,1999.04198 C91.0232075,1998.61898 87.8750721,2001.44898 87.8750721,2004.99998 C87.8750721,2006.88998 88.7692896,2008.57398 90.1636971,2009.67298 C87.1074334,2010.79798 84.7871636,2013.27698 84.044024,2016.63598 C83.7745338,2017.85698 84.7789973,2018.99998 86.0539717,2018.99998 L101.945727,2018.99998 C103.221722,2018.99998 104.226185,2017.85698 103.955674,2016.63598"
+                      id="profile_round-[#ffffff]"
+                    ></path>
                   </g>
                 </g>
               </g>
-            </svg>
-            Profile
-          </div>
-        </button>
-      </a>
+            </g>
+          </svg>
+          Profile
+        </div>
+      </button>
+      <a>
 
-      <button (click)="onLogout()" mat-raised-button color="warn" class="bb-button" id="logout-button"
-        *ngIf="authethicated">
+      <button
+        (click)="onLogout()"
+        mat-raised-button
+        color="warn"
+        class="bb-button"
+        id="logout-button"
+        *ngIf="authethicated"
+      >
         <div class="button-label-wrap">
-          <svg viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff" width="29"
-            height="29">
+          <svg
+            viewBox="0 0 29 29"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            stroke="#ffffff"
+            width="29"
+            height="29"
+          >
             <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g
+              id="SVGRepo_tracerCarrier"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></g>
             <g id="SVGRepo_iconCarrier">
               <g id="Interface / Exit">
-                <path id="Vector"
+                <path
+                  id="Vector"
                   d="M12 15L15 12M15 12L12 9M15 12H4M4 7.24802V7.2002C4 6.08009 4 5.51962 4.21799 5.0918C4.40973 4.71547 4.71547 4.40973 5.0918 4.21799C5.51962 4 6.08009 4 7.2002 4H16.8002C17.9203 4 18.4796 4 18.9074 4.21799C19.2837 4.40973 19.5905 4.71547 19.7822 5.0918C20 5.5192 20 6.07899 20 7.19691V16.8036C20 17.9215 20 18.4805 19.7822 18.9079C19.5905 19.2842 19.2837 19.5905 18.9074 19.7822C18.48 20 17.921 20 16.8031 20H7.19691C6.07899 20 5.5192 20 5.0918 19.7822C4.71547 19.5905 4.40973 19.2839 4.21799 18.9076C4 18.4798 4 17.9201 4 16.8V16.75"
-                  stroke="#fffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                  stroke="#fffff"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></path>
               </g>
             </g>
           </svg>

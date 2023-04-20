@@ -39,10 +39,6 @@ export class MovieGeneratorService {
     return this.httpClient.post<moviePosts>(`${this.serverURL}/posts`, post, {withCredentials: true})
   }
 
-  removeMoviePosts(post: moviePosts, id: string){
-    return this.httpClient.delete<moviePosts>(`${this.serverURL}/posts/${id}`, {withCredentials: true})
-  }
-
   getMoviePosts(movieId: string | undefined){
     if(typeof(movieId) == undefined){
       throw new Error('movieId is undefined')

@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Emmiters } from '../emitters/emmiters';
 import { MovieGeneratorService } from '../services/movie-generator.service';
+<<<<<<< Updated upstream
 import { LoginRegisterService } from '../services/login-register.service';
+=======
+>>>>>>> Stashed changes
 import { Movie } from '../user-auth/user';
 
 
@@ -20,9 +23,15 @@ export class HomePageComponent implements OnInit {
   userWatchlist: Movie[] = []
 
   constructor(
+<<<<<<< Updated upstream
     private movieGeneratorService: MovieGeneratorService,
     private loginService: LoginRegisterService
   ){}
+=======
+    private movieGeneratorService: MovieGeneratorService
+  ){
+  }
+>>>>>>> Stashed changes
 
   ngOnInit(): void {
     this.getMovie()
@@ -31,7 +40,10 @@ export class HomePageComponent implements OnInit {
       {
         next: (username : string) => {
           this.username = username
+<<<<<<< Updated upstream
           this.loginService.setUsername(this.username);
+=======
+>>>>>>> Stashed changes
         }
       }
     )
@@ -40,7 +52,10 @@ export class HomePageComponent implements OnInit {
       {
         next: (auth : boolean) => {
           this.isAuthenticated = auth
+<<<<<<< Updated upstream
           this.loginService.setUserAuth(this.isAuthenticated);
+=======
+>>>>>>> Stashed changes
           this.message = 'Hey '
         }
       }
@@ -58,6 +73,22 @@ export class HomePageComponent implements OnInit {
         }
       }
     )
+<<<<<<< Updated upstream
+=======
+  }
+  
+  openMoviePopup(movie: Movie){
+    Emmiters.generatedMovie.emit(movie)
+
+    for(let i = 0; i < Emmiters.watchList.length; i++){
+      if(Emmiters.watchList.at(i)?.id == movie.id){
+        Emmiters.isMovieWatched.emit(true);
+        console.log('movie was watched');
+      }
+    }
+
+    Emmiters.isPopupOpen.emit(true);
+>>>>>>> Stashed changes
   }
 
   setUserAuth(auth: boolean) {

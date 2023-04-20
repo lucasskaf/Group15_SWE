@@ -7,11 +7,12 @@ import { BrowserModule, By } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Data } from "@angular/router";
 import { of } from "rxjs";
-import { AppRoutingModule } from "../app-routing.module";
+import { routing } from "../app-routing.module";
 import { ProfilePageModule } from "../profile-page/profile-page.module";
 import { NavBarService } from "../services/nav-bar.service";
 import { UserAuthModule } from "../user-auth/user-auth.module";
 import { NavBarComponent } from "./nav-bar.component";
+import { Emmiters } from "../emitters/emmiters";
 
 describe("NavBarComponent", () => {
   let component: NavBarComponent;
@@ -29,7 +30,7 @@ describe("NavBarComponent", () => {
     await TestBed.configureTestingModule({
     imports: [BrowserModule,
         HttpClientModule,
-        AppRoutingModule,
+        routing,
         UserAuthModule,
         ProfilePageModule,
         BrowserAnimationsModule,
@@ -59,34 +60,18 @@ describe("NavBarComponent", () => {
     expect(spy).toHaveBeenCalled();
   })
 
-  it('should call logout', async () => {
+  it('should emit authenticated false', () => {
     const fixture = TestBed.createComponent(NavBarComponent);
-  fixture.detectChanges();
+    fixture.detectChanges();
 
-  const component = fixture.componentInstance;
+    const component = fixture.componentInstance;
 
-  await fixture.whenStable(); // wait for async operation to complete
+    component.onLogout()
 
-  const button = fixture.debugElement.query(By.css('#logout-button')).nativeElement;
+    const spy = spyOn(component, 'onLogout');
 
-  const spy = spyOn(component, 'onLogout');
+    let auth = component.authethicated
 
-  button.click();
-
-  expect(spy).toHaveBeenCalled();
-    // httpClientSpy.post.and.returnValue(of(USER))
-    // const fixture = TestBed.createComponent(NavBarComponent);
-    // // spy on event emitter
-    // const component = fixture.componentInstance; 
-    // spyOn(component, 'onLogout');
-
-    // // trigger the click
-    // const nativeElement = fixture.nativeElement;
-    // const button = nativeElement.querySelector('#logout-button')
-    // button.dispatchEvent(new Event('click'));
-
-    // fixture.detectChanges();
-
-    // expect(component.onLogout).toHaveBeenCalledTimes(0)
+    expect(auth).toBeFalse();
   })
 })
