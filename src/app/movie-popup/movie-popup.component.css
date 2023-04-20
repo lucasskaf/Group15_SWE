@@ -6,8 +6,9 @@
 
 img {
     width: 355px;
+    height: 500px;
     box-shadow: 0px 0px 35px 5px rgba(0, 0, 0, 0.25);
-    margin: 35px 25px 35px 10px;
+    margin: 35px 25px 25px 10px;
 }
 
 #generator-icon {
@@ -125,6 +126,10 @@ form button {
     align-items: center;
 }
 
+#movie-posts h4 {
+    font-size: 20px;
+}
+
 span.p-float-label{
     margin: 10px 0 15px 0;
 }
@@ -136,9 +141,41 @@ span.p-float-label, span.p-float-label input, span.p-float-label textarea {
 #add-post-input {
     background-color: rgb(235, 217, 179);
     padding: 10px 15px;
-    border-radius: 15px;
+    border-radius: 12px;
 }
 
+div#post-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+div#post-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center
+}
+
+div#post-header-main {
+    display: flex;
+    flex-direction: column;
+}
+
+div#post-header-main #title {
+    font-weight: 700;
+    font-size: 18px;
+}
+
+div#post-header-main p {
+    margin: 5px 0;
+}
+
+p#post-date {
+    font-size: 15px;
+}
 
 ::ng-deep #p-g-post.p-element.p-g-button.p-button.p-component {
     margin: 10px 0;
@@ -181,5 +218,9 @@ span.p-float-label, span.p-float-label input, span.p-float-label textarea {
 }
 
 ::ng-deep .p-virtualscroller-item.ng-star-inserted {
-    background-color: aqua;
+    background-color: #4f214a;
+    color: white;
+    border-radius: 20px;
+    margin: 15px 25px;
+    padding: 5px 20px;
 }

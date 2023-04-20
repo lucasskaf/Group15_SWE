@@ -11,29 +11,21 @@ import { FormBuilder, Validators } from '@angular/forms';
   styleUrls: ['./movie-popup.component.css']
 })
 export class MoviePopupComponent implements OnInit {
-  @Input() generatedMovie: Movie = {vote_average: 0.0}
-  @Input() isPopupOpen: boolean = false
-  @Output() ouputPopupStatus: EventEmitter<boolean> = new EventEmitter();
-
   postForm
   username: string = ""
   isPostOpen: boolean = false
   didSendReview: boolean = false
   didFoundPosts: boolean = false
+  moviePostsEmmiter: EventEmitter<moviePosts[]> = new EventEmitter()
   moviePosts: moviePosts[] = []
+  moviePostsValues: moviePosts[] = []
   isAuthenticated: boolean = false
   isMovieWatched: boolean = false
+  isPopupOpen: boolean = false
+  generatedMovie: Movie = {id: 0, vote_average: 0}
 
   constructor(private movieGeneratorService : MovieGeneratorService,
     private formBuilder: FormBuilder) {
-      // Emmiters.watchList.subscribe(
-      //   {
-      //     next: (userList: Movie[]) => {
-      //       this.userWatchedList = userList
-      //       console.log(`SUBSRIBED AND THIS LENGHT: ${this.userWatchedList.length}`)
-      //     }
-      //   }
-      // )
     }
 
   ngOnInit(): void {
@@ -53,45 +45,46 @@ export class MoviePopupComponent implements OnInit {
       }
     )
 
-    Emmiters.isPopupOpen.subscribe(
+    Emmiters.generatedMovie.subscribe(
       {
-        next: (status) => {
-          this.isPopupOpen = status
+        next: (movie) => {
+          this.generatedMovie = movie
+        },
+        error: (err) => {
+          console.log(`Was not able to get movie`)
         }
       }
     )
 
-    this.setupMoviePopUp()
-  }
+    Emmiters.isPopupOpen.subscribe(
+      {
+        next: (status) => {
+          this.isPopupOpen = status
 
-  showMovie() {
-    Emmiters.isPopupOpen.emit(true)
-  }
+          if(status){
+            console.log(this.generatedMovie.id, this.generatedMovie.title)
+            this.generateMoviePosts(this.generatedMovie.id.toString())
+          }
+        }
+      }
+    )
 
-  closeMovie() {
-    console.log('CLICKED ON CLOSE')
-    Emmiters.isPopupOpen.emit(false)
-    this.ouputPopupStatus.emit(false)
-  }
+    Emmiters.isMovieWatched.subscribe(
+      {
+        next: (status) => {
+          this.isMovieWatched = status
+        }
+      }
+    )
 
-  toogleAddPost(){
-    this.isPostOpen = !this.isPostOpen
-  }
-
-  setupMoviePopUp(){
-    if(Emmiters.watchList.includes(this.generatedMovie)){
-      this.isMovieWatched = true
-    }
-    else {
-      this.isMovieWatched = false
-    }
-
-    this.generateMoviePosts(this.generatedMovie.id?.toString())
-
-    console.log(`WAS MOVIE WATCHED: ${this.isMovieWatched}`)
-    this.showMovie()
-
-    console.log(`GETTING USERNAME: ${this.username}`)
+    this.moviePostsEmmiter.subscribe({
+      next: (newMoviePost) => {
+        this.moviePostsValues = newMoviePost
+      },
+      error: (err) => {
+        console.log('IN GETTING POST VALUES', err)
+      }
+    })
 
     this.postForm = this.formBuilder.group({
       movie_id: this.generatedMovie.id,
@@ -101,18 +94,30 @@ export class MoviePopupComponent implements OnInit {
     })
   }
 
+  closeMovie() {
+    console.log('CLICKED ON CLOSE')
+    Emmiters.isPopupOpen.emit(false)
+    // Emmiters.isMovieWatched.emit(false)
+  }
+
+  toogleAddPost(){
+    this.isPostOpen = !this.isPostOpen
+  }
+
   onSubmitPost(post: moviePosts){
-    post.movie_id = this.generatedMovie.id?.toString()
+    post.movie_id = this.generatedMovie.id.toString()
     post.username = this.username
+    console.log('THIS IS THE POST:')
     console.log(post)
 
     this.movieGeneratorService.addMoviePosts(post).subscribe(
       {
         next: (resp) => {
-          this.moviePosts.push(post)
+          this.moviePosts.push(resp)
+          this.moviePostsEmmiter.emit(this.moviePosts)
           this.didFoundPosts = true
           this.didSendReview = true
-          console.log('ADDED SUCCESSFULLY')
+          this.isPostOpen = false
         },
         error: (err) => {
           console.log('NOT ADD POST')
@@ -127,6 +132,8 @@ export class MoviePopupComponent implements OnInit {
         next: (resp) => {
           console.log(resp)
           this.isMovieWatched = true
+          Emmiters.isMovieWatched.emit(true)
+          console.log(`BEFORE ADDED: ${Emmiters.watchList.length}`)
 
           Emmiters.watchList.push(movie)
         },
@@ -143,6 +150,7 @@ export class MoviePopupComponent implements OnInit {
         next: (resp) => {
           console.log(`POSTS: ${resp}`)
           this.moviePosts = resp
+          this.moviePostsEmmiter.emit(this.moviePosts)
           this.didFoundPosts = true
         },
         error: (err) => {

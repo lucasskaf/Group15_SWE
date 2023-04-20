@@ -1,7 +1,6 @@
 <app-nav-bar></app-nav-bar>
 <bb-login-register></bb-login-register>
 <bb-movie-generator></bb-movie-generator>
-<!-- <h2>{{message + username}}</h2> -->
 <main>
     <div id="bg">
         <img src="../../assets/bg_image.jpeg" alt="Background Image">
@@ -55,7 +54,7 @@
                         <i class="pi pi-star"></i>
                         <i class="pi pi-star"></i>
                     </p>
-                    <p-button icon="pi pi-info-circle" label="Learn more"></p-button>
+                    <p-button icon="pi pi-info-circle" label="Learn more" (onClick)="openMoviePopup(movie)"></p-button>
                 </div>
             </div>
         </ng-template>

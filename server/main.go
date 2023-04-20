@@ -801,6 +801,7 @@ func createPost(context *gin.Context) {
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
 	result, err := postDatabase.InsertOne(context, bson.M{
 		"username": username,
+		"movieid":  newPost.MovieID,
 		"title":    newPost.Title,
 		"body":     newPost.Body,
 		"date":     date,

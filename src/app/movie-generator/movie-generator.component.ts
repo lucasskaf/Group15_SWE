@@ -11,27 +11,10 @@ import { Emmiters } from '../emitters/emmiters';
   styleUrls: ['./movie-generator.component.css'],
 })
 export class MovieGeneratorComponent implements OnInit {
-  testMovie: Movie = {
-    adult: false,
-    backdrop_path: '/892rHLop6XobpTmdJ05UfkWMZpf.jpg',
-    id: 789708,
-    original_language: 'en',
-    original_title: 'Hilda and the Mountain King',
-    overview:
-      'When Hilda wakes up in the body of a troll, she must use her wits and courage to get back home, become human again — and save the city of Trolberg.',
-    popularity: 36.58,
-    poster_path: '/Ac9xJvb1oTnv71j2yfdCQktIlYT.jpg',
-    release_date: '2021-12-30',
-    title: 'Hilda and the Mountain King',
-    vote_average: 7.5,
-    vote_count: 114,
-  };
-
   username;
   generatorForm;
   postForm;
-  generatedMovie: Movie = { vote_average: 0.0 };
-  openPopup: boolean = false;
+  generatedMovie: Movie = {id: 3, vote_average: 0}
 
   constructor(
     private movieGeneratorService: MovieGeneratorService,
@@ -47,18 +30,40 @@ export class MovieGeneratorComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    Emmiters.isPopupOpen.subscribe({
-      next: (status) => {
-        this.openPopup = status;
-      },
-    });
+    
   }
 
   getGeneratedMovie(filters) {
     this.movieGeneratorService.getRandomMovieWithFilters(filters).subscribe({
       next: (respMovie) => {
-        // console.log(respMovie);
-        this.generatedMovie = respMovie;
+        console.log(respMovie);
+        // let testMovie = {
+        //     "adult": false,
+        //     "backdrop_path": "/OQeVFQIq0UmzStgkgugQGf6uHB.jpg",
+        //     "id": 662409,
+        //     "original_language": "en",
+        //     "original_title": "Wake N Bake by Rohan Joshi",
+        //     "overview": "\"Hysterical\", \"unmissable\", \"magnificent\", \"profound\" are all words. Coincidentally, Wake N Bake, Rohan Joshi's first stand-up special, also has words. After almost a decade in comedy, one of India's foremost comedians and online has words to say about life in one's thirties, home renovation, (thrilling, we know), not being cut out for marriage or roadtrips, and living a 420- friendly life (oh so now we have your attention. Typical). Some of those words are even funny. The seamless hour-long narrative is a tour of all the things that keep Rohan up at night, which, as it turns out, is pretty trivial stuff, because he's basic like that. It's an hour of comedy you'll never forget for five minutes.",
+        //     "popularity": 2.156,
+        //     "poster_path": "/qQEiA6R52nSKYG4MOlN3ZRC1VyC.jpg",
+        //     "release_date": "2020-01-10",
+        //     "title": "Wake N Bake by Rohan Joshi",
+        //     "vote_average": 8,
+        //     "vote_count": 3
+        // }
+        
+        // console.log(testMovie)
+        // this.generatedMovie = respMovie;
+        this.generatedMovie = respMovie
+        Emmiters.generatedMovie.emit(respMovie)
+
+        for(let i = 0; i < Emmiters.watchList.length; i++){
+          if(Emmiters.watchList.at(i)?.id == this.generatedMovie.id){
+            Emmiters.isMovieWatched.emit(true);
+            console.log('movie was watched');
+          }
+        }
+
         Emmiters.isPopupOpen.emit(true);
       },
       error: (err) => {
@@ -68,8 +73,6 @@ export class MovieGeneratorComponent implements OnInit {
   }
 
   onSubmit(generatorData) {
-    // console.log(`BFORE: ${generatorData}`);
-
     let actors_array: string[] = [];
     // Text process
     if (generatorData.actors != '') {
@@ -87,8 +90,6 @@ export class MovieGeneratorComponent implements OnInit {
     if (generatorData.max_runtime) {
       generatorData.max_runtime = parseInt(generatorData.max_runtime);
     }
-
-    // console.log(`AFTER: ${generatorData}`);
 
     this.getGeneratedMovie(generatorData);
   }
