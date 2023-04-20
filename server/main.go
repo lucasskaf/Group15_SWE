@@ -799,11 +799,12 @@ func createPost(context *gin.Context) {
 	// Add/insert new created post into database ForumPosts collection ForumPosts for storage
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
 	result, err := postDatabase.InsertOne(context, bson.M{
-    "username": username,
-    "title":    newPost.Title,
-    "body":     newPost.Body,
-    "date":     date,
-  })
+		"username": username,
+		"movieid":  newPost.MovieID,
+		"title":    newPost.Title,
+		"body":     newPost.Body,
+		"date":     date,
+	})
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
 		return
@@ -811,7 +812,7 @@ func createPost(context *gin.Context) {
 
 	newPost.PostID = result.InsertedID.(primitive.ObjectID)
 	newPost.Date = date
-  newPost.Username = username
+	newPost.Username = username
 
 	userDatabase := client.Database("UserInfo").Collection("UserInfo")
 	filter := bson.M{"username": username}
@@ -934,11 +935,11 @@ func updatePost(context *gin.Context) {
 	}
 
 	postID := context.Param("postID")
-  if localMode {
-    url := context.Request.URL.String()
-    parts := strings.Split(url, "/")
-    postID = parts[len(parts)-1]
-  }
+	if localMode {
+		url := context.Request.URL.String()
+		parts := strings.Split(url, "/")
+		postID = parts[len(parts)-1]
+	}
 	objectID, err := primitive.ObjectIDFromHex(postID)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "This is an invalid post ID"})
@@ -952,9 +953,9 @@ func updatePost(context *gin.Context) {
 	// Need to get the post that needs to be updated
 	postDatabase := client.Database("ForumPosts").Collection("ForumPosts")
 	filter := bson.M{"_id": objectID}
-  if localMode {
-    filter = bson.M{"postid": objectID}
-  }
+	if localMode {
+		filter = bson.M{"postid": objectID}
+	}
 	var currentPost Post
 	err = postDatabase.FindOne(context, filter).Decode(&currentPost)
 	if err != nil { // post does not exist
@@ -1262,7 +1263,7 @@ func main() {
 	router.POST("/:username/add", addToWatchlist)
 	router.POST("/posts", createPost)
 	router.DELETE("/posts/:postID", deletePost)
-  router.PUT("/posts/:postID", updatePost)
+	router.PUT("/posts/:postID", updatePost)
 	router.PUT("/:username/update", updateUserInfo)
 	router.DELETE("/:username/delete", removeUser)
 	router.DELETE("/:username/watchlist/remove", removeFromWatchlist)
