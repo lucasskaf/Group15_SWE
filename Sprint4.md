@@ -1,6 +1,6 @@
 # Work Completed
 
-- Front-end:
+### Front-end:
   - Our main goals for the final sprint was to complete the generator and "Elite Recommendatios" section of the home page,
   along with adding all the user's movies to the "watched" section of the profile page. After some user experience testing,
   we decided that the home page would not require a "sidenav", instead, we could utilize the space better. In doing so, we 
@@ -23,7 +23,7 @@
   - Movie Popup component (if fetches movie successfully, emmits events and get variables)
   - NavBar component in the home page (authentification emmiter and open login)
 
-- Back-End:
+### Back-End:
  - Overhauled the random movie generator and added a generator function with filters.
  - Implemented input sanitization to prevent XSS attacks.
  - Added function to get posts with a page system.
