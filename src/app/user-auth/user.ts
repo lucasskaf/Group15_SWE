@@ -4,7 +4,7 @@ export interface Movie {
 	budget?: number,
 	genres?: string[],
 	homepage?: string,
-	id?: number,
+	id: number,
 	original_language?: string,
 	original_title?: string,   
 	overview?: string,   
@@ -25,7 +25,7 @@ export interface Movie {
 }
 
 export interface moviePosts {
-  movie_id: string | undefined,
+  movie_id: string,
   username: string,
   title: string,
   body: string
@@ -34,7 +34,8 @@ export interface moviePosts {
 export interface User {
     "username" : string,
     "password" : string,
-	"watchlist": Movie[]
+	"watchlist": Movie[],
+	"posts": moviePosts[]
 }
 
 // rating: number,
