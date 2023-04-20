@@ -127,10 +127,8 @@ export class MoviePopupComponent implements OnInit {
         next: (resp) => {
           console.log(resp)
           this.isMovieWatched = true
-          console.log(`BEFORE ADDED: ${Emmiters.watchList.length}`)
 
-          Emmiters.watchList.push(resp)
-          console.log(`AFTER ADDED: ${Emmiters.watchList.length}`)
+          Emmiters.watchList.push(movie)
         },
         error: (err) => {
           console.log(err)

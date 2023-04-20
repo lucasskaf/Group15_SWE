@@ -57,7 +57,7 @@ export class MovieGeneratorComponent implements OnInit {
   getGeneratedMovie(filters) {
     this.movieGeneratorService.getRandomMovieWithFilters(filters).subscribe({
       next: (respMovie) => {
-        console.log(respMovie);
+        // console.log(respMovie);
         this.generatedMovie = respMovie;
         Emmiters.isPopupOpen.emit(true);
       },
@@ -68,7 +68,7 @@ export class MovieGeneratorComponent implements OnInit {
   }
 
   onSubmit(generatorData) {
-    console.log(`BFORE: ${generatorData}`);
+    // console.log(`BFORE: ${generatorData}`);
 
     let actors_array: string[] = [];
     // Text process
@@ -88,7 +88,7 @@ export class MovieGeneratorComponent implements OnInit {
       generatorData.max_runtime = parseInt(generatorData.max_runtime);
     }
 
-    console.log(`AFTER: ${generatorData}`);
+    // console.log(`AFTER: ${generatorData}`);
 
     this.getGeneratedMovie(generatorData);
   }

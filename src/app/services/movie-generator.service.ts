@@ -31,8 +31,8 @@ export class MovieGeneratorService {
     return this.httpClient.post<Movie>(`${this.serverURL}/watchlist/add`, movie, {withCredentials: true})
   }
 
-  removeFromWatchList(movie: Movie) {
-    // return this.httpClient.delete<Movie>(`${this.serverURL}/me/watchlist/remove`, movie, {withCredentials: true})
+  removeFromWatchList(movie: Movie, username: string) {
+    return this.httpClient.post<Movie>(`${this.serverURL}/${username}/watchlist/remove`, movie, {withCredentials: true})
   }
 
   addMoviePosts(post: moviePosts){

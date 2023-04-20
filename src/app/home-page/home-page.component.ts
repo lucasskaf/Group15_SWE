@@ -31,6 +31,7 @@ export class HomePageComponent implements OnInit {
       {
         next: (username : string) => {
           this.username = username
+          this.loginService.setUsername(this.username);
         }
       }
     )

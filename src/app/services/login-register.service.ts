@@ -12,6 +12,7 @@ export class LoginRegisterService {
   constructor(private http : HttpClient) { }
 
   userAuthStatus: boolean = false;
+  userName: string = "";
 
   serverURL : string = 'http://localhost:8080'
 
@@ -33,5 +34,13 @@ export class LoginRegisterService {
 
   setUserAuth(auth: boolean) {
     this.userAuthStatus = auth;
+  }
+
+  getUsername(): string {
+    return this.userName;
+  }
+
+  setUsername(name: string){
+    this.userName = name;
   }
 }
